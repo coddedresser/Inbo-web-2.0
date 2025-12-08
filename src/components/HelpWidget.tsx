@@ -78,8 +78,8 @@ const PanelWrapper = ({ children, panelRef, screen }: PanelWrapperProps) => (
     <div
       ref={panelRef}
       className="
-        fixed bottom-36 right-20
-        w-[320px] max-h-[60vh]
+        fixed bottom-28 right-16
+        w-[320px] max-h-[50vh]
         p-4 rounded-2xl
         bg-white/95 backdrop-blur-[20px]
         shadow-[0_4px_24px_rgba(0,0,0,0.25)]
@@ -516,9 +516,9 @@ export default function HelpWidget() {
       {/* Floating button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-14 w-14 h-14 rounded-full bg-[#C46A54] text-white text-2xl shadow-lg z-[997] flex items-center justify-center"
+        className="fixed bottom-16 right-12 w-10 h-10 rounded-full bg-[#C46A54] text-white text-2xl shadow-lg z-[997] flex items-center justify-center"
       >
-        <img src="/icons/help-modal-icon.png" alt="help" className="w-8 h-8" />
+        <img src="/icons/help-modal-icon.png" alt="help" className="w-6 h-6" />
       </button>
 
       {/* Panel */}

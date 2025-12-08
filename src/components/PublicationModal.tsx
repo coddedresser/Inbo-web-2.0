@@ -63,7 +63,7 @@ export default function PublicationModal({
           md:max-w-sm
           md:rounded-2xl
           md:h-auto
-          md:max-h-[690px]
+          md:max-h-[70vh]
         "
       >
         {/* SCROLLABLE CONTENT */}
