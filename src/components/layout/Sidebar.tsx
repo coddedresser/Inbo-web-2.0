@@ -110,7 +110,7 @@ export default function Sidebar({ openMobile, onClose }: any) {
                   key={label}
                   href={href}
                   className={`
-                    flex items-center gap-3 py-3 rounded-xl text-[16px]
+                    flex items-center gap-2 py-2 rounded-xl text-[16px]
                     transition-all
                     ${
                       active
@@ -120,7 +120,7 @@ export default function Sidebar({ openMobile, onClose }: any) {
                     ${collapsed ? "justify-center px-0" : "px-4"}
                   `}
                 >
-                  <Icon size={22} strokeWidth={1.7} className="shrink-0" />
+                  <Icon size={20} strokeWidth={1.7} className="shrink-0" />
                   {!collapsed && <span>{label}</span>}
                 </Link>
               );
@@ -133,7 +133,7 @@ export default function Sidebar({ openMobile, onClose }: any) {
             {/* PROMO */}
             {!collapsed && showPromo && (
               <div className="mt-4 mb-4">
-                <div className="relative bg-gradient-to-br from-[#98FBB2] to-[#A6F5E6] rounded-2xl px-4 pt-4 pb-1 overflow-hidden">
+                <div className="relative bg-gradient-to-br from-[#98FBB2] to-[#A6F5E6] rounded-2xl px-2 pt-2 pb-1 overflow-hidden">
 
                   {/* Close Button */}
                   <button
