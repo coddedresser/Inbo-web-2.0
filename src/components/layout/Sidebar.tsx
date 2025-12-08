@@ -6,13 +6,15 @@ import {
   BarChart3,
   Bell,
   Trash2,
-  ChevronRight,
 } from "lucide-react";
 
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
+
+// Import the new component
+import UserSection from "@/components/UserSection";
 
 export default function Sidebar({ openMobile, onClose }: any) {
   const pathname = usePathname();
@@ -125,10 +127,10 @@ export default function Sidebar({ openMobile, onClose }: any) {
             })}
           </div>
 
-          {/* BOTTOM SECTION: PROMO → PROFILE */}
+          {/* BOTTOM SECTION */}
           <div className="flex flex-col">
 
-            {/* PROMO — always above profile      # priyanshu se prompt image ke variations banvake change kr skte h*/}  
+            {/* PROMO */}
             {!collapsed && showPromo && (
               <div className="mt-4 mb-4">
                 <div className="relative bg-gradient-to-br from-[#98FBB2] to-[#A6F5E6] rounded-2xl px-4 pt-4 pb-1 overflow-hidden">
@@ -175,33 +177,8 @@ export default function Sidebar({ openMobile, onClose }: any) {
               </div>
             )}
 
-            {/* PROFILE — pinned at very bottom */}
-            <div
-              className={`flex items-center py-4 border-t border-[#E5E7EB] ${
-                collapsed ? "justify-center" : "justify-between"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Image
-                  src="/icons/profile-icon.png"
-                  width={40}
-                  height={40}
-                  alt="User"
-                  className="rounded-full"
-                />
-
-                {!collapsed && (
-                  <div>
-                    <p className="text-[15px] font-medium">Robbi Darwis</p>
-                    <p className="text-[13px] text-[#6A7282]">View Profile</p>
-                  </div>
-                )}
-              </div>
-
-              {!collapsed && (
-                <ChevronRight size={18} className="text-[#A2AAB4]" />
-              )}
-            </div>
+            {/* USER SECTION (component) */}
+            <UserSection collapsed={collapsed} />
           </div>
         </div>
       </aside>
