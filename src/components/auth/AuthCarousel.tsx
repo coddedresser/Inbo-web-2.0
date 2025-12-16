@@ -61,7 +61,7 @@ export default function AuthCarousel() {
             style={{ flex: "0 0 100%" }}
             className="
               flex flex-col items-center relative 
-              pt-20 px-10 w-full h-full
+              pt-12 px-10 w-full h-full
               [mask-image:linear-gradient(to_top,transparent_0%,black_35%)]
             "
           >

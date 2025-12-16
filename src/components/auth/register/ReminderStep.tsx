@@ -185,7 +185,7 @@ export default function ReminderStep({
   );
 
   return (
-    <div className="w-full flex flex-col items-center px-4">
+    <div className="w-full max-h-screen flex flex-col items-center px-4">
       {/* ---------------- TITLE ---------------- */}
       <div className="text-center mt-6 mb-8 max-w-[360px]">
         <h1 className="text-[28px] font-bold leading-[34px] text-[#0C1014]">

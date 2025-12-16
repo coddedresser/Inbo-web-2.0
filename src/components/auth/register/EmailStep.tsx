@@ -39,7 +39,7 @@ export default function EmailStep({
     const showError = !!formData.email && !isEmailValid;
 
     return (
-      <div className="h-full flex flex-col bg-white">
+      <div className="max-h-screen flex flex-col bg-white">
         {/* CONTENT */}
         <div className="flex-1 px-4 pt-6 pb-36">
           {/* Title */}

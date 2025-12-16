@@ -50,7 +50,7 @@ export default function WhereStep({
      ========================= */
   if (isMobile) {
     return (
-      <div className="h-full flex flex-col bg-white">
+      <div className="max-h-screen flex flex-col bg-white">
 
         {/* CONTENT */}
         <div className="flex-1 px-4 pt-6 pb-40">

@@ -50,7 +50,7 @@ export default function NotifyStep({ onAllow, onSkip }: Props) {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative max-h-screen overflow-hidden">
       {/* ===== FULLSCREEN BACKGROUND IMAGE ===== */}
       <img
         src="/background/notification-bg.png"
@@ -64,7 +64,7 @@ export default function NotifyStep({ onAllow, onSkip }: Props) {
       )}
 
       {/* ===== CONTENT ===== */}
-      <div className="relative z-20 min-h-screen flex flex-col">
+      <div className="relative z-20 max-h-screen flex flex-col">
         <div className="flex-1 flex flex-col items-center px-6 pt-10">
           <h1 className="text-[24px] font-semibold text-[#0C1014] text-center mb-12">
             Don’t miss

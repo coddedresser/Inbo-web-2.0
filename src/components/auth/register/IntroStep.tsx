@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export function IntroStep({ onEmail }: { onEmail: () => void }) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#C86E58] text-white">
+    <div className="relative max-h-screen overflow-hidden bg-[#C86E58] text-white">
       
       {/* Help icon (same position as header) */}
       <div className="absolute top-0 right-0 z-20 h-[72px] px-6 flex items-center">

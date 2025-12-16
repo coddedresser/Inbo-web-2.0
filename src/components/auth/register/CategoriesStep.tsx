@@ -87,7 +87,7 @@ function MobileLayout({
   onContinue,
 }: any) {
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="max-w-screen max-h-screen flex flex-col">
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto px-4 pt-6 pb-32">
         <Title />

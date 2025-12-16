@@ -147,7 +147,7 @@ const UsernameStep = forwardRef(function UsernameStep(
 
   if (isMobile) {
     return (
-      <div className="h-full flex flex-col bg-white">
+      <div className="max-h-screen flex flex-col bg-white">
         <div className="px-4 pt-6 text-center">
           <h1 className="text-[24px] font-bold text-[#0C1014]">
             Create your inbo email
