@@ -53,6 +53,9 @@ importers:
       universal-cookie:
         specifier: ^8.0.1
         version: 8.0.1
+      use-media:
+        specifier: ^1.5.0
+        version: 1.5.0(react@19.2.0)
     devDependencies:
       '@types/js-cookie':
         specifier: ^3.0.6
@@ -2116,6 +2119,11 @@ packages:
 
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
+
+  use-media@1.5.0:
+    resolution: {integrity: sha512-gEKsAwpqeejjLXllfQLlktok4CX3cpsS0TChDR9VTl3xQ/231jWujjebnJrt+IH50RRO163JPvHVKBj+W+Weqg==}
+    peerDependencies:
+      react: '*'
 
   use-sync-external-store@1.6.0:
     resolution: {integrity: sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==}
@@ -4466,6 +4474,10 @@ snapshots:
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
+
+  use-media@1.5.0(react@19.2.0):
+    dependencies:
+      react: 19.2.0
 
   use-sync-external-store@1.6.0(react@19.2.0):
     dependencies:
