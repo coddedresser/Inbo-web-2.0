@@ -27,6 +27,7 @@ function generate24Hours() {
     tag: i % 2 === 0 ? "Software" : "Design",
     thumbnail: "/logos/forbes-sample.png",
     read: Math.random() > 0.5,
+    slug: `24h-${i + 1}`,
   }));
 }
 
@@ -46,6 +47,7 @@ function generate7Days() {
     tag: i % 2 === 0 ? "Tech" : "UX",
     thumbnail: "/logos/sample-img.png",
     read: Math.random() > 0.5,
+    slug: `7d-${i + 1}`,
   }));
 }
 
