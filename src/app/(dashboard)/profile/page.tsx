@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 
 // Sub Pages
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import AccountPage from "@/components/profile/AccountPage";
 import HelpCenterPage from "@/components/profile/HelpCenterPage";
 import FeedbackPage from "@/components/profile/FeedbackPage";
@@ -15,11 +16,12 @@ import ContactSupportPage from "@/components/profile/ContactSupportPage";
 import AboutPage from "@/components/profile/AboutPage";
 import EditProfileModal from "@/components/profile/EditProfileModal";
 import ProfileHeader from "@/components/profile/Header";
+import MobileProfileSection from "./MobileProfileSection";
 
 /* ---------------------------------------
    Utility: Get Initials
 ---------------------------------------- */
-const getInitials = (name: string) =>
+export const getInitials = (name: string) =>
   name
     .split(" ")
     .map((n) => n[0])
@@ -126,6 +128,7 @@ function QRBadge({ label }: { label: string }) {
    MAIN COMPONENT
 ---------------------------------------- */
 export default function ProfileSection() {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [appearance, setAppearance] =
     useState<"light" | "dark" | "system">("system");
 
@@ -176,6 +179,16 @@ export default function ProfileSection() {
         <Page onBack={() => setActivePage("main")} />
       </div>
     );
+  }
+  if (isMobile) {
+    return <MobileProfileSection
+      activePage={activePage}
+      setActivePage={setActivePage}
+      user={user}
+      appearance={appearance}
+      setAppearance={setAppearance}
+      copyToClipboard={copyToClipboard}
+    />
   }
 
   /* ---------------------------------------

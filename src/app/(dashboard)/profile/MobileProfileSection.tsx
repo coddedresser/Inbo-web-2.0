@@ -1,0 +1,285 @@
+"use client";
+
+import Image from "next/image";
+import { ArrowLeft, ChevronRight, Pencil } from "lucide-react";
+import { getInitials } from "./page";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import EditProfileModal from "@/components/profile/EditProfileModal";
+
+/* ---------------------------------------
+   Progress Ring
+---------------------------------------- */
+function ProgressRing({ percent }: { percent: number }) {
+  const size = 65;
+  const stroke = 6;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percent / 100) * circumference;
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: "rotate(90deg)" }}>
+        <circle
+          stroke="#C9E9D2"
+          fill="transparent"
+          strokeWidth={stroke}
+          r={radius}
+          cx={size / 2}
+          cy={size / 2}
+        />
+        <circle
+          stroke="#2E6F40"
+          fill="transparent"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          r={radius}
+          cx={size / 2}
+          cy={size / 2}
+        />
+      </svg>
+    </div>
+  );
+}
+
+/* ---------------------------------------
+   Toggle Component (iOS style)
+---------------------------------------- */
+function MobileToggle({
+  isOn,
+  onToggle,
+}: {
+  isOn: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className={`w-[46px] h-[26px] rounded-full relative transition-colors 
+      ${isOn ? "bg-[#C46A54]" : "bg-[#D0D4DB]"}`}
+    >
+      <span
+        className={`absolute top-[3px] w-[20px] h-[20px] bg-white rounded-full transition-all
+        ${isOn ? "left-[22px]" : "left-[3px]"}`}
+      />
+    </button>
+  );
+}
+
+/* ---------------------------------------
+   MAIN MOBILE PROFILE
+---------------------------------------- */
+export default function MobileProfileSection({
+  activePage,
+  setActivePage,
+  user,
+  appearance,
+  setAppearance,
+  copyToClipboard,
+}: any) {
+  
+  const router = useRouter();
+  const [notifications, setNotifications] = useState(true);
+  const [haptics, setHaptics] = useState(true);
+
+  // ⭐ Added for modal
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-[#F5F6FA] pb-20">
+
+      {/* HEADER */}
+      <div className="flex items-center h-[56px] px-4 border-[#EAECF0]">
+        <ArrowLeft size={22} onClick={() => router.back()} className="mr-3" />
+        <p className="text-[17px] font-semibold flex-1 text-center mr-6">Profile</p>
+      </div>
+
+      {/* TOP PROFILE */}
+      <div className="p-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <ProgressRing percent={user.completeness} />
+            <div className="absolute inset-0 flex items-center justify-center text-[14px] font-bold">
+              {getInitials(user.name)}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[18px] font-semibold">{user.name}</p>
+            <p className="text-[14px] text-[#6F7680]">Joined {user.joined}</p>
+          </div>
+        </div>
+
+        {/* Edit Icon → OPEN MODAL */}
+        <button onClick={() => setShowEditModal(true)} className="p-2 active:scale-90">
+          <Pencil size={20} strokeWidth={1.8} className="text-[#0C1014]" />
+        </button>
+      </div>
+
+      {/* HIGHLIGHTS / READ LATER */}
+      <div className="px-4 flex gap-3">
+        <div className="flex-1 bg-white shadow rounded-xl p-4">
+          <Image src="/icons/mobile-highlights.png" width={26} height={26} alt="" />
+          <p className="text-[14px] mt-2 font-medium">Highlights</p>
+          <p className="text-[12px] text-[#6F7680] mt-1">22 Reads</p>
+        </div>
+
+        <div className="flex-1 bg-white shadow rounded-xl p-4">
+          <Image src="/icons/mobile-readlater.png" width={26} height={26} alt="" />
+          <p className="text-[14px] mt-2 font-medium">Read later</p>
+          <p className="text-[12px] text-[#6F7680] mt-1">1 Reads</p>
+        </div>
+      </div>
+
+      {/* INBO MAIL */}
+      <div className="mx-4 mt-5 bg-white rounded-2xl p-4 shadow-sm border border-[#ECECEC]">
+        <p className="text-[16px] font-semibold mb-3">Your Inbo mail</p>
+
+        <div className="flex items-center justify-between">
+          <div className="flex gap-3">
+            <Image src="/logos/help-inbo-logo.png" width={40} height={40} alt="" />
+            <div>
+              <p className="text-[13px] text-[#6F7680]">Inbo Mailbox</p>
+              <p className="text-[15px] font-semibold">example@inbo.club</p>
+            </div>
+          </div>
+
+          <button
+            onClick={copyToClipboard}
+            className="rounded-full px-3 py-1.5 bg-white border border-[#D8DDE3] text-[13px]"
+          >
+            Copy
+          </button>
+        </div>
+
+        <p className="text-[12px] text-[#6F7680] mt-3 leading-[16px]">
+          Use this email when subscribing to newsletters. All your newsletters arrive here.
+        </p>
+      </div>
+
+      {/* MANAGE SECTION */}
+      <MobileList
+        title="Manage"
+        items={[
+          ["Offline Newsletters", "offline"],
+          ["Manage Subscriptions", "/subscriptions"],
+          ["Favorites", "favorites"],
+          ["Collection", "collection"],
+          ["Trash", "/delete"],
+        ]}
+        router={router}
+        setActivePage={setActivePage}
+      />
+
+      {/* GENERAL SETTINGS */}
+      <div className="mx-4 mt-6">
+        <p className="text-[16px] font-semibold mb-3">General Settings</p>
+
+        <MobileRow label="Account Settings" onPress={() => setActivePage("account")} />
+
+        <MobileRow label="Appearance" value={appearance} onPress={() => setActivePage("appearance")} />
+
+        <MobileRow label="Customize Swipes" onPress={() => setActivePage("swipes")} />
+
+        <MobileRow
+          label="Notification"
+          toggle={<MobileToggle isOn={notifications} onToggle={() => setNotifications(!notifications)} />}
+        />
+
+        <MobileRow
+          label="Haptic Feedback"
+          toggle={<MobileToggle isOn={haptics} onToggle={() => setHaptics(!haptics)} />}
+        />
+      </div>
+
+      {/* HELP & ABOUT */}
+      <MobileList
+        title="Help & About"
+        items={[
+          ["Help & FAQ", "help"],
+          ["Share feedback", "feedback"],
+          ["Report a Bug", "bug"],
+          ["About Us", "about"],
+        ]}
+        router={router}
+        setActivePage={setActivePage}
+      />
+
+      {/* LOGOUT */}
+      <div className="mx-4 mt-4 bg-white rounded-xl border shadow-sm p-4 flex justify-between items-center">
+        <p className="text-[15px] text-red-500 font-medium">Log Out</p>
+        <ChevronRight size={20} className="text-red-500" />
+      </div>
+
+      {/* FOOTER */}
+      <div className="flex flex-col items-center mt-8 opacity-60 mb-10">
+        <Image src="/logos/inbo-logo.png" width={50} height={50} alt="inbo" />
+        <p className="text-[12px] mt-1">v2.00(0)</p>
+      </div>
+
+      {/* ⭐ EDIT PROFILE MODAL */}
+      <EditProfileModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+      />
+    </div>
+  );
+}
+
+/* ---------------------------------------
+   Mobile Row Component
+---------------------------------------- */
+function MobileRow({
+  label,
+  value,
+  onPress,
+  toggle,
+}: {
+  label: string;
+  value?: string;
+  onPress?: () => void;
+  toggle?: React.ReactNode;
+}) {
+  return (
+    <div
+      onClick={onPress}
+      className="bg-white p-4 rounded-xl border shadow-sm mb-3 flex justify-between items-center active:bg-gray-50"
+    >
+      <p className="text-[15px] text-[#0C1014]">{label}</p>
+
+      {toggle ? (
+        toggle
+      ) : (
+        <div className="flex items-center gap-2">
+          {value && <span className="text-[14px] text-[#6F7680]">{value}</span>}
+          <ChevronRight size={18} className="opacity-60" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------
+   Section List Component
+---------------------------------------- */
+function MobileList({ title, items, router, setActivePage }: any) {
+  return (
+    <div className="mx-4 mt-6">
+      <p className="text-[16px] font-semibold mb-3">{title}</p>
+
+      {items.map(([label, key]: any) => (
+        <div
+          key={key}
+          onClick={() => {
+            if (key.startsWith("/")) router.push(key);
+            else setActivePage(key);
+          }}
+        >
+          <MobileRow label={label} />
+        </div>
+      ))}
+    </div>
+  );
+}

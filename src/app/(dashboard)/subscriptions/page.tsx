@@ -1,12 +1,586 @@
-// src/app/(dashboard)/subscriptions/page.tsx
+"use client";
+
+import { useState, useMemo } from "react";
+import type { Dispatch, SetStateAction } from "react";
+import { ArrowLeft, List, LayoutGrid } from "lucide-react";
+import NewsletterCard from "@/components/inbox/InboxCard";
+import TabSwitcher, { TabType } from "@/components/inbox/TabSwitcher";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import MobileSubscriptionSection from "./MobileSubscriptionSection";
+
+/* --------------------------------------------
+   TYPES
+--------------------------------------------- */
+type Newsletter = {
+  id: string;               // used as slug
+  title: string;
+  description: string;
+
+  date: string;             // extracted from publishedAt
+  time: string;             // extracted from readTime
+
+  tag: string;              // category
+
+  badgeText: string;
+  badgeColor: string;
+  badgeTextColor: string;
+
+  author: string;
+
+  thumbnail: string;
+
+  slug: string;             // duplicate id field for NewsletterCard compatibility
+
+  read: boolean;
+};
+
+
+
+export type Publisher = {
+  id: string;
+
+  name: string;
+  description: string;        // 🔥 missing earlier (Figma subtitle)
+  logo: string;
+
+  totalItems: number;           // 🔥 "10 items"
+  lastReceivedAgo: string;
+
+  active: boolean;            // 🔥 toggle state stays here
+  firstMail: string;
+
+  newsletters: Newsletter[];
+};
+
+
+/* --------------------------------------------
+   DUMMY DATA
+--------------------------------------------- */
+export const PUBLISHERS: Publisher[] = [
+  {
+  id: "ilt",
+  name: "I Love Typography",
+  description: "Design & typography insights",
+  logo: "/logos/ilt.png",
+  active: true,
+  totalItems: 10,
+  lastReceivedAgo: "11 hours ago",
+  firstMail: "May 23, 2025",
+
+    newsletters: [
+      {
+        id: "ilt-1",
+        slug: "ilt-1",
+
+        title: "Personalised UX Doesn’t Work",
+        description:
+          "Why most personalized UX fails and how Nike’s simple tricks deliver engagement.",
+
+        // Convert to required props
+        date: "Oct 3rd",
+        time: "2 mins",
+        tag: "Design",
+
+        badgeText: "ILT",
+        badgeColor: "#F04F3A",
+        badgeTextColor: "#FFFFFF",
+
+        author: "I Love Typography",
+
+        thumbnail: "/placeholder.png",
+
+        read: false,
+      },
+      {
+        id: "ilt-2",
+        slug: "ilt-2",
+
+        title: "Typography in the Age of AI",
+        description: "How AI is reshaping modern type systems.",
+
+        date: "Sep 28th",
+        time: "3 mins",
+        tag: "Design",
+
+        badgeText: "ILT",
+        badgeColor: "#F04F3A",
+        badgeTextColor: "#FFFFFF",
+
+        author: "I Love Typography",
+
+        thumbnail: "/placeholder.png",
+
+        read: true,
+      },
+    ],
+
+  },
+  {
+    id: "ilt-8",
+    name: "I Love Typography",
+    description: "Design & typography insights",
+    logo: "/logos/ilt.png",
+    active: true,
+    totalItems: 10,
+    lastReceivedAgo: "11 hours ago",
+    firstMail: "May 23, 2025",
+    newsletters: []
+  },
+  {
+    id: "ilt-9",
+    name: "I Love Typography",
+    description: "Design & typography insights",
+    logo: "/logos/ilt.png",
+    active: true,
+    totalItems: 10,
+    lastReceivedAgo: "11 hours ago",
+    firstMail: "May 23, 2025",
+    newsletters: []
+  },
+  {
+    id: "ilt-82",
+    name: "I Love Typography",
+    description: "Design & typography insights",
+    logo: "/logos/ilt.png",
+    active: true,
+    totalItems: 10,
+    lastReceivedAgo: "11 hours ago",
+    firstMail: "May 23, 2025",
+    newsletters: []
+  },
+  {
+    id: "ilt-81",
+    name: "I Love Typography",
+    description: "Design & typography insights",
+    logo: "/logos/ilt.png",
+    active: true,
+    totalItems: 10,
+    lastReceivedAgo: "11 hours ago",
+    firstMail: "May 23, 2025",
+    newsletters: []
+  },
+  {
+    id: "ilt-821",
+    name: "I Love Typography",
+    description: "Design & typography insights",
+    logo: "/logos/ilt.png",
+    active: true,
+    totalItems: 10,
+    lastReceivedAgo: "11 hours ago",
+    firstMail: "May 23, 2025",
+    newsletters: []
+  },
+  {
+    id: "ilt-822",
+    name: "I Love Typography",
+    description: "Design & typography insights",
+    logo: "/logos/ilt.png",
+    active: true,
+    totalItems: 10,
+    lastReceivedAgo: "11 hours ago",
+    firstMail: "May 23, 2025",
+    newsletters: []
+  },
+
+  {
+  id: "ilt-4",
+  name: "I Love Typography",
+  description: "Design & typography insights",
+  logo: "/logos/ilt.png",
+  active: true,
+  totalItems: 10,
+  lastReceivedAgo: "11 hours ago",
+  firstMail: "May 23, 2025",
+  newsletters: []
+}
+,
+];
+
+
+
+/* --------------------------------------------
+   PAGE
+--------------------------------------------- */
 export default function SubscriptionsPage() {
+  const [activeView, setActiveView] = useState<"list" | "grid">("list");
+  const [inactiveView, setInactiveView] = useState<"list" | "grid">("list");
+  const [activeVisible, setActiveVisible] = useState(6);
+  const [inactiveVisible, setInactiveVisible] = useState(6);
+
+  const [selectedPublisher, setSelectedPublisher] =
+    useState<Publisher | null>(null);
+  
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
+  if (isMobile) {
+    return <MobileSubscriptionSection/>
+  }
+
   return (
-    <div className="flex flex-col w-full">
-      {/* ========== CONTAINER 1: HEADER ========== */}
-      <div className="w-full">
-        <div className="w-full h-[78px] bg-white  border border-[#E5E7EB] flex items-center justify-between px-6 shadow-sm">
-          <h2 className="text-[26px] font-bold text-[#0C1014]">Subscription</h2>
+    <div className="flex flex-col min-h-screen bg-[#F6F7F9]">
+      {/* ================= HEADER (ALWAYS) ================= */}
+      <header className="h-[78px] bg-white border-b border-[#E5E7EB] flex items-center px-6">
+        <h1 className="text-[26px] font-bold text-[#0C1014]">
+          Your Subscription
+        </h1>
+      </header>
+
+      {/* ================= MAIN ================= */}
+      <main className="flex-1 p-6">
+        {!selectedPublisher ? (
+          <PublisherList
+            activeView={activeView}
+            setActiveView={setActiveView}
+            inactiveView={inactiveView}
+            setInactiveView={setInactiveView}
+            activeVisible={activeVisible}
+            setActiveVisible={setActiveVisible}
+            inactiveVisible={inactiveVisible}
+            setInactiveVisible={setInactiveVisible}
+            onSelect={setSelectedPublisher}
+          />
+
+
+
+        ) : (
+          <PublisherDetail
+            publisher={selectedPublisher}
+            onBack={() => setSelectedPublisher(null)}
+          />
+        )}
+      </main>
+    </div>
+  );
+}
+
+/* --------------------------------------------
+   PAGE 1 – PUBLISHER LIST
+--------------------------------------------- */
+function PublisherList({
+  activeView,
+  setActiveView,
+  inactiveView,
+  setInactiveView,
+  activeVisible,
+  setActiveVisible,
+  inactiveVisible,
+  setInactiveVisible,
+  onSelect,
+}: {
+  activeView: "list" | "grid";
+  setActiveView: (v: "list" | "grid") => void;
+  inactiveView: "list" | "grid";
+  setInactiveView: (v: "list" | "grid") => void;
+  activeVisible: number;
+  setActiveVisible: Dispatch<SetStateAction<number>>;
+  inactiveVisible: number;
+  setInactiveVisible: Dispatch<SetStateAction<number>>;
+  onSelect: (p: Publisher) => void;
+  })
+{
+  const active = PUBLISHERS.filter((p) => p.active);
+  const inactive = PUBLISHERS.filter((p) => !p.active);
+  const visibleActive = active.slice(0, activeVisible);
+  const visibleInactive = inactive.slice(0, inactiveVisible);
+
+  return (
+    <div className="space-y-10">
+      <SectionHeader
+        title="Active Subscriptions"
+        count={active.length}
+        view={activeView}
+        setView={setActiveView}
+      />
+
+      <PublisherGrid
+        view={activeView}
+        data={visibleActive}
+        onSelect={onSelect}
+      />
+      {activeVisible < active.length && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => setActiveVisible((v) => v + 6)}
+            className="px-6 py-2 rounded-full bg-[#C46A54] text-white text-sm font-medium"
+          >
+            View more
+          </button>
         </div>
+      )}
+
+
+      <SectionHeader
+        title="Inactive Subscriptions"
+        count={inactive.length}
+        view={inactiveView}
+        setView={setInactiveView}
+      />
+
+      <PublisherGrid
+        view={inactiveView}
+        data={visibleInactive}
+        onSelect={onSelect}
+      />
+      {inactiveVisible < inactive.length && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => setInactiveVisible((v) => v + 6)}
+            className="px-6 py-2 rounded-full bg-[#C46A54] text-white text-sm font-medium"
+          >
+            View more
+          </button>
+        </div>
+      )}
+
+
+
+    </div>
+  );
+}
+
+function PublisherGrid({
+  view,
+  data,
+  onSelect,
+}: {
+  view: "list" | "grid";
+  data: Publisher[];
+  onSelect: (p: Publisher) => void;
+}) {
+  return (
+    <div
+      className={
+        view === "grid"
+          ? "grid grid-cols-1 md:grid-cols-2 gap-4"
+          : "flex flex-col gap-3"
+      }
+    >
+      {data.map((p) => (
+        <button
+          key={p.id}
+          onClick={() => onSelect(p)}
+          className="flex items-center gap-4 p-4 rounded-xl border border-[#F3F4F6] bg-white text-left"
+        >
+          {/* Logo */}
+          <div className="w-[44px] h-[44px] rounded-full overflow-hidden flex-shrink-0">
+            <img
+              src={p.logo}
+              alt={p.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          {/* Text */}
+          <div className="flex flex-col">
+            <p className="text-[16px] font-medium text-[#0C1014]">
+              {p.name}
+            </p>
+
+            {p.active ? (
+              <p className="text-[14px] text-[#6F7680]">
+                {p.totalItems} items, most recent was {p.lastReceivedAgo}
+              </p>
+            ) : (
+              <p className="text-[14px] text-[#A2AAB4]">
+                This newsletter is currently inactive.
+              </p>
+            )}
+          </div>
+        </button>
+
+      ))}
+    </div>
+  );
+}
+
+/* --------------------------------------------
+   PAGE 2 – PUBLISHER DETAIL
+--------------------------------------------- */
+function PublisherDetail({
+  publisher,
+  onBack,
+}: {
+  publisher: Publisher;
+  onBack: () => void;
+}) {
+  const [tab, setTab] = useState<TabType>("unread");
+  const [publisherState, setPublisherState] = useState(publisher);
+  const toggleActive = () => {
+    setPublisherState((prev) => ({
+      ...prev,
+      active: !prev.active,
+    }));
+  };
+  const total = publisher.newsletters.length;
+  const readCount = publisher.newsletters.filter((n) => n.read).length;
+  const unreadCount = total - readCount;
+  const readPercent = total ? Math.round((readCount / total) * 100) : 0;
+
+  const filtered = useMemo(() => {
+    if (tab === "read") return publisher.newsletters.filter((n) => n.read);
+    if (tab === "unread") return publisher.newsletters.filter((n) => !n.read);
+    return publisher.newsletters;
+  }, [tab, publisher.newsletters]);
+
+  return (
+    <div className="space-y-8">
+      {/* BACK */}
+      <button
+        onClick={onBack}
+        className="flex items-center gap-2 text-[14px] text-black"
+      >
+        <ArrowLeft size={18} /> back
+      </button>
+
+      {/* ================= PUBLISHER CARD ================= */}
+      <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(219,219,219,0.25)] p-6 flex justify-between">
+        <div className="flex gap-4">
+          {/* Logo */}
+          <div className="w-[62px] h-[62px] rounded-full bg-black overflow-hidden flex items-center justify-center">
+            <img
+              src={publisher.logo || "https://placehold.co/62x62"}
+              alt={publisher.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          {/* Text */}
+          <div className="flex flex-col justify-center gap-3">
+            <div className="space-y-1">
+              <p className="text-[16px] font-medium text-black">
+                {publisher.name}
+              </p>
+              <p className="text-[14px] text-[#A2AAB4]">
+                {publisherState.description}
+              </p>
+            </div>
+
+            <p className="text-[14px]">
+              <span className="font-medium text-[#0C1014]">
+                First mail:&nbsp;
+              </span>
+              <span className="text-[#6F7680]">{publisher.firstMail}</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Right Controls */}
+        <div className="flex flex-col items-end gap-5">
+          {/* Active Toggle */}
+          <div className="flex items-center gap-3">
+            <span className="text-[16px] text-[#0C1014]">Active</span>
+            <button
+              onClick={toggleActive}
+              className={`w-[36px] h-[20px] rounded-full relative transition ${
+                publisherState.active ? "bg-[#C46A54]" : "bg-[#DBDFE4]"
+              }`}
+            >
+              <span
+                className={`absolute top-[2px] w-[16px] h-[16px] bg-white rounded-full transition ${
+                  publisherState.active ? "left-[18px]" : "left-[2px]"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Unsubscribe */}
+          <button className="px-4 py-2 rounded-full border border-[#CA1C1C] text-[#CA1C1C] text-[14px] font-medium">
+            Unsubscribe
+          </button>
+        </div>
+      </div>
+
+      {/* ================= ENGAGEMENT ================= */}
+      <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(219,219,219,0.25)] p-6 space-y-6">
+        <h3 className="text-[20px] font-medium">Your Engagement</h3>
+
+        <div className="flex justify-between">
+          <div>
+            <p className="text-[16px] text-[#A2AAB4]">
+              Total newsletter received
+            </p>
+            <p className="text-[24px] font-medium">{total}</p>
+          </div>
+
+          <div>
+            <p className="text-[16px] text-[#A2AAB4]">Read percentage</p>
+            <p className="text-[24px] font-medium">{readCount} read</p>
+          </div>
+        </div>
+
+        {/* Gradient Bar */}
+        <div className="h-[8px] bg-[#F3F4F6] rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: `${readPercent}%`,
+              background:
+                "linear-gradient(90deg, #CA1C1C 0%, #01AF0C 100%)",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* ================= RECENT ISSUES ================= */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <p className="text-[16px] font-medium">Recent Issues</p>
+          <TabSwitcher
+            tab={tab}
+            setTab={setTab}
+            unreadCount={unreadCount}
+          />
+        </div>
+
+        <div className="space-y-3">
+          {filtered.map((n) => (
+            <NewsletterCard key={n.id} {...n} slug={n.id} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+/* --------------------------------------------
+   SHARED
+--------------------------------------------- */
+function SectionHeader({
+  title,
+  count,
+  view,
+  setView,
+}: {
+  title: string;
+  count: number;
+  view: "list" | "grid";
+  setView: (v: "list" | "grid") => void;
+}) {
+  return (
+    <div className="flex justify-between items-center">
+      <div>
+        <p className="font-medium">{title}</p>
+        <p className="text-sm text-[#A2AAB4]">{count} Newsletter</p>
+      </div>
+
+      <div className="flex rounded-full border border-[#DBDFE4] overflow-hidden">
+        <button
+          onClick={() => setView("list")}
+          className={`p-2 ${
+            view === "list" ? "bg-[#0C1014] text-white" : "text-[#A2AAB4]"
+          }`}
+        >
+          <List size={18} />
+        </button>
+        <button
+          onClick={() => setView("grid")}
+          className={`p-2 ${
+            view === "grid" ? "bg-[#0C1014] text-white" : "text-[#A2AAB4]"
+          }`}
+        >
+          <LayoutGrid size={18} />
+        </button>
       </div>
     </div>
   );

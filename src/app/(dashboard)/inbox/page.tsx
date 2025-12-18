@@ -167,7 +167,7 @@ export default function InboxPage() {
               </h3>
 
               {filtered24.slice(0, visible24).map((item, i) => (
-                <NewsletterCard key={i} {...item} />
+                <div className="mb-3"><NewsletterCard key={i} {...item} /></div>
               ))}
 
               {showMore24 && <CenterButton onClick={loadMore24} />}
