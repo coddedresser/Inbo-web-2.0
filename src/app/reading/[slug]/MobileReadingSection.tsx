@@ -44,7 +44,7 @@ export default function MobileReadingSection({
   }, []);
 
   return (
-    <div className="relative h-screen bg-[#F5F5F5] overflow-hidden">
+    <div className="relative h-screen bg-[#F5F5F5] text-black overflow-hidden">
       {/* ================= HEADER ================= */}
       {atTop && (
         <MobileReadingHeader

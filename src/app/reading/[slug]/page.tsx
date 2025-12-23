@@ -229,7 +229,7 @@ export default function ReadingPage(props: PageProps) {
       <SEOHead title={data.title} description="Reading view" />
 
       {/* MODAL CONTAINER */}
-      <div className="relative z-10 h-screen w-full flex hide-scrollbar">
+      <div className="relative z-10 h-screen text-black w-full flex hide-scrollbar">
         <div className="bg-white shadow-xl flex flex-col w-full">
           {/* HEADER */}
           {!isReadingMode && (
