@@ -1,0 +1,250 @@
+"use client";
+
+import { useEffect, useState, useMemo } from "react";
+import { ArrowLeft, ListFilter } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+import NewsletterCard from "@/components/inbox/InboxCard";
+import FilterButton, {
+  FilterValue,
+  FILTER_LABELS,
+} from "@/components/FilterButton";
+import SortButton, { SortValue } from "@/components/SortButton";
+import EmptyReadLater from "@/components/EmptyReadLater";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+
+/* --------------------- DUMMY DATA --------------------- */
+
+function generateReadLater() {
+  return Array.from({ length: 16 }).map((_, i) => ({
+    badgeText: i % 2 === 0 ? "AI" : "BfM",
+    badgeColor: i % 2 === 0 ? "#E0F2FE" : "#FEF3C7",
+    badgeTextColor: i % 2 === 0 ? "#0369A1" : "#B45309",
+    author: i % 2 === 0 ? "ByteByteGo Newsletter" : "Built for Mars",
+    title:
+      `Saved Article ${i + 1}: ` +
+      "A Deep Exploration Into Modern Software Systems and Design Thinking",
+    description:
+      "This description is intentionally long to test truncation and layout behavior.",
+    date: "Oct 3rd",
+    time: "2 mins",
+    tag: i % 2 === 0 ? "Software" : "Design",
+    thumbnail: "/logos/forbes-sample.png",
+    read: Math.random() > 0.5,
+    slug: `read-later-${i + 1}`,
+  }));
+}
+
+/* --------------------- PAGINATION --------------------- */
+
+const INITIAL_VISIBLE = 5;
+const LOAD_MORE = 5;
+
+/* ----------------------------------------------------- */
+
+export default function ReadLaterPage() {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const router = useRouter();
+
+  const [items, setItems] = useState<any[]>([]);
+  const [visible, setVisible] = useState(INITIAL_VISIBLE);
+
+  /* -------- FILTER STATE -------- */
+  const [filter, setFilter] = useState<FilterValue>("unread");
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  /* -------- SORT STATE -------- */
+  const [sortBy, setSortBy] = useState<SortValue>("recent");
+
+  useEffect(() => {
+    setItems(generateReadLater());
+  }, []);
+
+  /* -------- FILTERED ITEMS -------- */
+  const filteredItems = items.filter((item) => {
+    if (filter === "all") return true;
+    if (filter === "read") return item.read;
+    return !item.read;
+  });
+
+  /* -------- SORTED ITEMS -------- */
+  const sortedItems = useMemo(() => {
+    if (sortBy === "oldest") {
+      return [...filteredItems].reverse();
+    }
+    return filteredItems;
+  }, [filteredItems, sortBy]);
+
+  const isEmpty = sortedItems.length === 0;
+  const showMore = visible < sortedItems.length;
+
+  const loadMore = () => {
+    setVisible((prev) =>
+      Math.min(prev + LOAD_MORE, sortedItems.length)
+    );
+  };
+
+  /* ======================================================
+     📱 MOBILE UI
+  ====================================================== */
+
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-[#F7F7F7]">
+        {/* HEADER */}
+        <div className="h-[64px] flex items-center px-4">
+          <button onClick={() => router.push("/profile")}>
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+
+          <h1 className="flex-1 text-center text-[20px] font-semibold">
+            Read Later
+          </h1>
+
+          <div className="w-5 h-5" />
+        </div>
+
+        {/* CONTENT */}
+        <div className="bg-white rounded-t-2xl min-h-[93vh] px-4">
+          {isEmpty ? (
+            <div className="flex min-h-[80vh] items-center justify-center">
+              <EmptyReadLater />
+            </div>
+          ) : (
+            <>
+              {/* TOP ROW */}
+              <div className="flex items-center justify-between py-4">
+                <span className="text-md text-gray-500">
+                  <span className="text-black">
+                    {sortedItems.length}
+                  </span>{" "}
+                  Read Later
+                </span>
+
+                <div className="flex gap-2">
+                  {/* FILTER BUTTON */}
+                  <button
+                    onClick={() => setFilterOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full text-sm font-medium"
+                  >
+                    <ListFilter className="w-4 h-4" />
+                    {FILTER_LABELS[filter]}
+                  </button>
+
+                  {/* SORT BUTTON */}
+                  <SortButton value={sortBy} onChange={setSortBy} />
+                </div>
+              </div>
+
+              {/* LIST */}
+              <div className="pb-6">
+                {sortedItems.map((item) => (
+                  <NewsletterCard
+                    key={item.slug}
+                    {...item}
+                    onClick={() => {}}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* MOBILE FILTER BOTTOM SHEET */}
+        {filterOpen && (
+          <div className="fixed inset-0 z-50">
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setFilterOpen(false)}
+            />
+
+            <div className="absolute bottom-0 w-full rounded-t-2xl bg-white p-6">
+              <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-gray-300" />
+
+              {(Object.keys(FILTER_LABELS) as FilterValue[]).map(
+                (key) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setFilter(key);
+                      setFilterOpen(false);
+                    }}
+                    className="flex w-full items-center justify-between py-3 text-base"
+                  >
+                    <span>{FILTER_LABELS[key]}</span>
+
+                    <span
+                      className={`h-5 w-5 rounded-full border flex items-center justify-center
+                        ${
+                          filter === key
+                            ? "border-[#C95C3A]"
+                            : "border-gray-300"
+                        }
+                      `}
+                    >
+                      {filter === key && (
+                        <span className="h-3 w-3 rounded-full bg-[#C95C3A]" />
+                      )}
+                    </span>
+                  </button>
+                )
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ======================================================
+     🖥 DESKTOP UI
+  ====================================================== */
+
+  return (
+    <div className="hidden min-h-[90%] md:flex w-full flex-col gap-8">
+      {/* HEADER */}
+      <div className="w-full h-[78px] bg-white border border-[#E5E7E8] flex items-center justify-between px-5 shadow-sm">
+        <h2 className="text-[26px] font-bold text-[#0C1014]">
+          Read Later
+        </h2>
+
+        <div className="flex gap-3">
+          <FilterButton value={filter} onChange={setFilter} />
+          <SortButton value={sortBy} onChange={setSortBy} />
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div className="w-full flex-1 flex px-6">
+        {isEmpty ? (
+          <div className="flex flex-1 items-center justify-center">
+            <EmptyReadLater />
+          </div>
+        ) : (
+          <div className="w-full flex flex-col mt-2">
+            {sortedItems.slice(0, visible).map((item) => (
+              <div key={item.slug} className="mb-3">
+                <NewsletterCard {...item} onClick={() => {}} />
+              </div>
+            ))}
+
+            {showMore && <CenterButton onClick={loadMore} />}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- VIEW MORE BUTTON ---------------- */
+
+function CenterButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="mx-auto mt-4 px-6 py-2 border border-gray-300 rounded-full text-black font-medium hover:bg-gray-50 transition"
+    >
+      View more
+    </button>
+  );
+}

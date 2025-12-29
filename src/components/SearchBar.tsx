@@ -1,8 +1,56 @@
 "use client";
 
 import { Search } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
 
 export default function SearchBar() {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const [query, setQuery] = useState("");
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const lastPushedQueryRef = useRef<string>("");
+
+  /* 1️⃣ Sync input from URL ONLY on /search (NO useSearchParams) */
+  useEffect(() => {
+    if (pathname === "/search") {
+      const params = new URLSearchParams(window.location.search);
+      setQuery(params.get("q") ?? "");
+    }
+  }, [pathname]);
+
+  /* 2️⃣ Clear input when leaving /search */
+  useEffect(() => {
+    if (pathname !== "/search") {
+      setQuery("");
+      lastPushedQueryRef.current = "";
+    }
+  }, [pathname]);
+
+  /* 3️⃣ Debounced navigation ONLY on typing */
+  const handleChange = (value: string) => {
+    setQuery(value);
+
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    debounceRef.current = setTimeout(() => {
+      const trimmed = value.trim();
+      if (!trimmed) return;
+
+      // prevent duplicate pushes
+      if (lastPushedQueryRef.current === trimmed) return;
+
+      lastPushedQueryRef.current = trimmed;
+
+      router.push(`/search?q=${encodeURIComponent(trimmed)}`, {
+        scroll: false,
+      });
+    }, 300);
+  };
+
   return (
     <div className="flex w-full md:w-auto md:flex-none">
       <div
@@ -17,9 +65,15 @@ export default function SearchBar() {
         <input
           type="text"
           placeholder="Search newsletter..."
+          value={query}
+          onChange={(e) => handleChange(e.target.value)}
           className="flex-1 bg-transparent outline-none text-[14px] text-black"
         />
-        <button className="w-[34px] h-[34px] bg-black rounded-full flex items-center justify-center">
+
+        <button
+          type="button"
+          className="w-[34px] h-[34px] bg-black rounded-full flex items-center justify-center"
+        >
           <Search size={16} className="text-white" />
         </button>
       </div>

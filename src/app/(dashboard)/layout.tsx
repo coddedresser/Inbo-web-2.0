@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
-import BottomNav from "@/components/layout/BottomNav";
 import HelpWidget from "@/components/HelpWidget";
 import { usePathname } from "next/navigation";
 import useMedia from "use-media"; // <-- detect mobile
@@ -29,11 +28,6 @@ export default function DashboardLayout({ children }: Props) {
         <main className="flex-1 overflow-auto">
           {children}
         </main>
-
-        {/* 👇 FIXED MOBILE BOTTOM NAV */}
-        <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-          <BottomNav />
-        </div>
       </div>
     );
   }

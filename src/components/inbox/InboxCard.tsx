@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+
 
 /* --------------------------------------------
    CUSTOM CHECKBOX (shared)
@@ -64,14 +66,25 @@ function InboxCardMobile({
   thumbnail,
   read,
   slug,
-
+  onClick,
   showCheckbox = false,
   checked = false,
   onCheckChange,
 }: any) {
+  const router = useRouter();
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      router.push(`/reading/${slug}`);
+    }
+  };
   return (
-    <Link href={`/reading/${slug}`} className="block">
-      <div className="md:hidden py-4 border-b border-gray-300">
+      <div onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      className="md:hidden py-4 border-b border-gray-300">
         <div className="px-4 flex gap-3 items-start">
           {/* CHECKBOX */}
           {showCheckbox && (
@@ -131,7 +144,6 @@ function InboxCardMobile({
           </div>
         </div>
       </div>
-    </Link>
   );
 }
 
@@ -151,14 +163,25 @@ function NewsletterCardDesktop({
   thumbnail,
   slug,
   read,
-
+  onClick,
   showCheckbox = false,
   checked = false,
   onCheckChange,
 }: any) {
+  const router = useRouter();
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      router.push(`/reading/${slug}`);
+    }
+  };
   return (
-    <Link href={`/reading/${slug}`} className="block">
       <div
+        onClick={handleClick}
+        role="button"
+        tabIndex={0}
         className="
           hidden md:flex
           bg-white border border-[#E5E7EB]
@@ -237,7 +260,6 @@ function NewsletterCardDesktop({
           </div>
         </div>
       </div>
-    </Link>
   );
 }
 

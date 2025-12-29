@@ -1,11 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowLeft, ChevronRight, Pencil,BarChart3 } from "lucide-react";
+import { ArrowLeft, ChevronRight, Pencil, BarChart3 } from "lucide-react";
 import { getInitials } from "./page";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import EditProfileModal from "@/components/profile/EditProfileModal";
+import ThemeBottomSheet from "@/components/profile/ThemeBottomSheet";
 
 /* ---------------------------------------
    Progress Ring
@@ -79,7 +80,6 @@ export default function MobileProfileSection({
   setAppearance,
   copyToClipboard,
 }: any) {
-  
   const router = useRouter();
   const [notifications, setNotifications] = useState(true);
   const [haptics, setHaptics] = useState(true);
@@ -87,14 +87,29 @@ export default function MobileProfileSection({
   // ⭐ Added for modal
   const [showEditModal, setShowEditModal] = useState(false);
 
+  // ⭐ Added for theme bottom sheet
+  const [themeSheetOpen, setThemeSheetOpen] = useState(false);
+  const [themeMode, setThemeMode] = useState<
+    "light" | "dark" | "system"
+  >(appearance || "system");
+
   return (
     <div className="min-h-screen bg-[#F5F6FA] pb-20">
-
       {/* HEADER */}
       <div className="flex items-center h-[56px] px-4 border-[#EAECF0]">
-        <ArrowLeft size={22} onClick={() => router.push("/inbox")} className="mr-3" />
-        <p className="text-[17px] font-semibold flex-1 text-center mr-6">Profile</p>
-        <BarChart3 size={22} onClick={() => router.push("/analytics")} className="mr-3"/>
+        <ArrowLeft
+          size={22}
+          onClick={() => router.push("/inbox")}
+          className="mr-3"
+        />
+        <p className="text-[20px] font-semibold flex-1 text-center mr-6">
+          Profile
+        </p>
+        <BarChart3
+          size={22}
+          onClick={() => router.push("/analytics")}
+          className="mr-3"
+        />
       </div>
 
       {/* TOP PROFILE */}
@@ -109,26 +124,49 @@ export default function MobileProfileSection({
 
           <div>
             <p className="text-[18px] font-semibold">{user.name}</p>
-            <p className="text-[14px] text-[#6F7680]">Joined {user.joined}</p>
+            <p className="text-[14px] text-[#6F7680]">
+              Joined {user.joined}
+            </p>
           </div>
         </div>
 
         {/* Edit Icon → OPEN MODAL */}
-        <button onClick={() => setShowEditModal(true)} className="p-2 active:scale-90">
+        <button
+          onClick={() => setShowEditModal(true)}
+          className="p-2 active:scale-90"
+        >
           <Pencil size={20} strokeWidth={1.8} className="text-[#0C1014]" />
         </button>
       </div>
 
       {/* HIGHLIGHTS / READ LATER */}
       <div className="px-4 flex gap-3">
-        <div className="flex-1 bg-white shadow rounded-xl p-4">
-          <Image src="/icons/mobile-highlights.png" width={26} height={26} alt="" />
+        {/* HIGHLIGHTS */}
+        <div
+          onClick={() => router.push("/highlights")}
+          className="flex-1 bg-white shadow rounded-xl p-4 active:scale-95 transition cursor-pointer"
+        >
+          <Image
+            src="/icons/highlight-icon.png"
+            width={26}
+            height={26}
+            alt=""
+          />
           <p className="text-[14px] mt-2 font-medium">Highlights</p>
           <p className="text-[12px] text-[#6F7680] mt-1">22 Reads</p>
         </div>
 
-        <div className="flex-1 bg-white shadow rounded-xl p-4">
-          <Image src="/icons/mobile-readlater.png" width={26} height={26} alt="" />
+        {/* READ LATER */}
+        <div
+          onClick={() => router.push("/read_later")}
+          className="flex-1 bg-white shadow rounded-xl p-4 active:scale-95 transition cursor-pointer"
+        >
+          <Image
+            src="/icons/read-later-icon.png"
+            width={26}
+            height={26}
+            alt=""
+          />
           <p className="text-[14px] mt-2 font-medium">Read later</p>
           <p className="text-[12px] text-[#6F7680] mt-1">1 Reads</p>
         </div>
@@ -140,10 +178,17 @@ export default function MobileProfileSection({
 
         <div className="flex items-center justify-between">
           <div className="flex gap-3">
-            <Image src="/logos/help-inbo-logo.png" width={40} height={40} alt="" />
+            <Image
+              src="/logos/help-inbo-logo.png"
+              width={40}
+              height={40}
+              alt=""
+            />
             <div>
               <p className="text-[13px] text-[#6F7680]">Inbo Mailbox</p>
-              <p className="text-[15px] font-semibold">example@inbo.club</p>
+              <p className="text-[15px] font-semibold">
+                example@inbo.club
+              </p>
             </div>
           </div>
 
@@ -156,7 +201,8 @@ export default function MobileProfileSection({
         </div>
 
         <p className="text-[12px] text-[#6F7680] mt-3 leading-[16px]">
-          Use this email when subscribing to newsletters. All your newsletters arrive here.
+          Use this email when subscribing to newsletters. All your
+          newsletters arrive here.
         </p>
       </div>
 
@@ -164,10 +210,10 @@ export default function MobileProfileSection({
       <MobileList
         title="Manage"
         items={[
-          ["Offline Newsletters", "offline"],
+          ["Offline Newsletters", "/offline"],
           ["Manage Subscriptions", "/subscriptions"],
-          ["Favorites", "favorites"],
-          ["Collection", "collection"],
+          ["Favorites", "/favorite"],
+          ["Collection", "/collection"],
           ["Trash", "/delete"],
         ]}
         router={router}
@@ -176,22 +222,45 @@ export default function MobileProfileSection({
 
       {/* GENERAL SETTINGS */}
       <div className="mx-4 mt-6">
-        <p className="text-[16px] font-semibold mb-3">General Settings</p>
+        <p className="text-[16px] font-semibold mb-3">
+          General Settings
+        </p>
 
-        <MobileRow label="Account Settings" onPress={() => setActivePage("account")} />
+        <MobileRow
+          label="Account Settings"
+          onPress={() => setActivePage("account")}
+        />
 
-        <MobileRow label="Appearance" value={appearance} onPress={() => setActivePage("appearance")} />
+        {/* ⭐ UPDATED: Appearance opens theme bottom sheet */}
+        <MobileRow
+          label="Appearance"
+          value={themeMode}
+          onPress={() => setThemeSheetOpen(true)}
+        />
 
-        <MobileRow label="Customize Swipes" onPress={() => setActivePage("swipes")} />
+        <MobileRow
+          label="Customize Swipes"
+          onPress={() => setActivePage("swipes")}
+        />
 
         <MobileRow
           label="Notification"
-          toggle={<MobileToggle isOn={notifications} onToggle={() => setNotifications(!notifications)} />}
+          toggle={
+            <MobileToggle
+              isOn={notifications}
+              onToggle={() => setNotifications(!notifications)}
+            />
+          }
         />
 
         <MobileRow
           label="Haptic Feedback"
-          toggle={<MobileToggle isOn={haptics} onToggle={() => setHaptics(!haptics)} />}
+          toggle={
+            <MobileToggle
+              isOn={haptics}
+              onToggle={() => setHaptics(!haptics)}
+            />
+          }
         />
       </div>
 
@@ -215,8 +284,13 @@ export default function MobileProfileSection({
       </div>
 
       {/* FOOTER */}
-      <div className="flex flex-col items-center mt-8 opacity-60 mb-10">
-        <Image src="/logos/inbo-logo.png" width={50} height={50} alt="inbo" />
+      <div className="flex flex-col items-center mt-8 opacity-60">
+        <Image
+          src="/logos/inbo-logo.png"
+          width={50}
+          height={50}
+          alt="inbo"
+        />
         <p className="text-[12px] mt-1">v2.00(0)</p>
       </div>
 
@@ -224,6 +298,17 @@ export default function MobileProfileSection({
       <EditProfileModal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
+      />
+
+      {/* ⭐ THEME BOTTOM SHEET */}
+      <ThemeBottomSheet
+        isOpen={themeSheetOpen}
+        value={themeMode}
+        onClose={() => setThemeSheetOpen(false)}
+        onChange={(mode) => {
+          setThemeMode(mode);
+          setAppearance(mode);
+        }}
       />
     </div>
   );
@@ -254,7 +339,11 @@ function MobileRow({
         toggle
       ) : (
         <div className="flex items-center gap-2">
-          {value && <span className="text-[14px] text-[#6F7680]">{value}</span>}
+          {value && (
+            <span className="text-[14px] text-[#6F7680] capitalize">
+              {value}
+            </span>
+          )}
           <ChevronRight size={18} className="opacity-60" />
         </div>
       )}

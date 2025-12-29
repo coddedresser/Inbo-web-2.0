@@ -1,19 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import InboxCardMobile from "@/components/inbox/InboxCard";
+import SortButton, { SortValue } from "@/components/SortButton";
 import {
   ArrowLeft,
   Search,
   HelpCircle,
-  ArrowUpDown,
   Trash2,
-  Check,
-  Circle,
 } from "lucide-react";
 
-type SortType = "latest" | "oldest";
+/* ---------------- TYPES ---------------- */
 
 type Newsletter = {
   id: string;
@@ -32,10 +30,9 @@ type Newsletter = {
 };
 
 export default function MobileDeleteSection() {
-  const [sortBy, setSortBy] = useState<SortType>("latest");
+  const [sortBy, setSortBy] = useState<SortValue>("recent");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showInfoSheet, setShowInfoSheet] = useState(false);
-  const [showSortSheet, setShowSortSheet] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const isSelectionMode = selectedIds.length > 0;
@@ -89,6 +86,14 @@ export default function MobileDeleteSection() {
     },
   ];
 
+  /* ---------------- SORT LOGIC (USING YOUR COMPONENT) ---------------- */
+  const sortedNewsletters = useMemo(() => {
+    if (sortBy === "oldest") {
+      return [...newsletters].reverse();
+    }
+    return newsletters;
+  }, [sortBy, newsletters]);
+
   return (
     <div className="w-full min-h-screen bg-[#F5F6FA]">
       {/* ================= HEADER ================= */}
@@ -116,7 +121,7 @@ export default function MobileDeleteSection() {
         ) : (
           <>
             <Link href="/profile" aria-label="Go back to profile">
-                <ArrowLeft size={22} className="mr-3" />
+              <ArrowLeft size={22} className="mr-3" />
             </Link>
 
             <span className="text-lg font-semibold">Trash</span>
@@ -131,7 +136,7 @@ export default function MobileDeleteSection() {
         )}
       </div>
 
-      {/* ================= PRIMARY ROUNDED SURFACE (IMAGE-2 STYLE) ================= */}
+      {/* ================= PRIMARY SURFACE ================= */}
       <div
         className="
           mt-2
@@ -145,78 +150,58 @@ export default function MobileDeleteSection() {
       >
         {/* ================= ACTION BUTTONS ================= */}
         {isSelectionMode && (
-        <div className="px-4 py-3 border-b border-[#E5E7EB] bg-white">
+          <div className="px-4 py-3 border-b border-[#E5E7EB] bg-white">
             <div className="flex items-center gap-3">
-            {/* DELETE */}
-            <button
+              <button
                 onClick={() => setShowDeleteModal(true)}
                 className="
-                h-[44px]
-                px-5
-                rounded-full
-                border border-[#EF4444]
-                bg-[#FEF2F2]
-                text-[#DC2626]
-                font-semibold
-                text-[15px]
-                flex items-center gap-2
-                active:scale-[0.97]
+                  h-[44px]
+                  px-5
+                  rounded-full
+                  border border-[#EF4444]
+                  bg-[#FEF2F2]
+                  text-[#DC2626]
+                  font-semibold
+                  text-[15px]
+                  flex items-center gap-2
+                  active:scale-[0.97]
                 "
-            >
+              >
                 Delete Permanently
                 <Trash2 size={18} />
-            </button>
+              </button>
 
-            {/* RESTORE */}
-            <button
+              <button
                 className="
-                h-[44px]
-                px-6
-                rounded-full
-                bg-[#F1F2F4]
-                text-[#111827]
-                font-semibold
-                text-[15px]
-                active:scale-[0.97]
+                  h-[44px]
+                  px-6
+                  rounded-full
+                  bg-[#F1F2F4]
+                  text-[#111827]
+                  font-semibold
+                  text-[15px]
+                  active:scale-[0.97]
                 "
-            >
+              >
                 Restore
-            </button>
+              </button>
             </div>
-        </div>
+          </div>
         )}
 
-
-        {/* ================= SORT ================= */}
+        {/* ================= SORT (YOUR COMPONENT) ================= */}
         {!isSelectionMode && (
           <div className="px-4 py-3">
-            <button
-              onClick={() => setShowSortSheet(true)}
-              className="
-                px-4 py-2
-                rounded-full
-                bg-[#EFEFEF]
-                text-sm
-                flex items-center gap-2
-                text-[#6B7280]
-              "
-            >
-              <ArrowUpDown size={16} />
-              Sort
-            </button>
+            <SortButton value={sortBy} onChange={setSortBy} />
           </div>
         )}
 
         {/* ================= LIST ================= */}
         <div>
-          {newsletters.map((item) => (
+          {sortedNewsletters.map((item) => (
             <div
               key={item.id}
-              className={
-                selectedIds.includes(item.id)
-                  ? "bg-[#F1F7FF]"
-                  : ""
-              }
+              className={selectedIds.includes(item.id) ? "bg-[#F1F7FF]" : ""}
             >
               <InboxCardMobile
                 {...item}
@@ -233,109 +218,73 @@ export default function MobileDeleteSection() {
       {showInfoSheet && (
         <BottomSheet onClose={() => setShowInfoSheet(false)}>
           <div className="flex items-center gap-2">
-            <HelpCircle size={32}/>
+            <HelpCircle size={32} />
             <p className="text-base text-left font-xl font-semibold">
-                Newsletters are automatically deleted after 30 days.
+              Newsletters are automatically deleted after 30 days.
             </p>
           </div>
-          
-        </BottomSheet>
-      )}
-
-      {/* ================= SORT SHEET ================= */}
-      {showSortSheet && (
-        <BottomSheet onClose={() => setShowSortSheet(false)}>
-          <button
-            onClick={() => {
-              setSortBy("latest");
-              setShowSortSheet(false);
-            }}
-            className="w-full flex justify-between items-center py-4 text-[#C25C3A] font-medium"
-          >
-            Recently deleted (default)
-            <Check size={18} />
-          </button>
-
-          <button
-            onClick={() => {
-              setSortBy("oldest");
-              setShowSortSheet(false);
-            }}
-            className="w-full flex justify-between items-center py-4"
-          >
-            Oldest first
-            <Circle size={18} className="text-gray-300" />
-          </button>
         </BottomSheet>
       )}
 
       {/* ================= DELETE MODAL ================= */}
-        {showDeleteModal && (
+      {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-            <div
+          <div
             className="
-                w-[92%]
-                max-w-[380px]
-                rounded-[28px]
-                bg-[#F7F7F8]
-                px-6 pt-6 pb-5
-                shadow-[0_20px_60px_rgba(0,0,0,0.25)]
+              w-[92%]
+              max-w-[380px]
+              rounded-[28px]
+              bg-[#F7F7F8]
+              px-6 pt-6 pb-5
+              shadow-[0_20px_60px_rgba(0,0,0,0.25)]
             "
-            >
-            {/* TITLE */}
-            <h3 className="text-[18px] font-semibold text-[#0C0D0E] mb-2 text-left">
-                Are you sure to delete The women…?
+          >
+            <h3 className="text-[18px] font-semibold text-[#0C0D0E] mb-2">
+              Are you sure to delete The women…?
             </h3>
 
-            {/* DESCRIPTION */}
-            <p className="text-[15px] text-[#6B7280] leading-[22px] mb-6 text-left">
-                This newsletter will be deleted immediately from your inbox account.
-                You can’t undo this action.
+            <p className="text-[15px] text-[#6B7280] leading-[22px] mb-6">
+              This newsletter will be deleted immediately from your inbox account.
+              You can’t undo this action.
             </p>
 
-            {/* ACTIONS */}
             <div className="flex gap-3">
-                {/* CANCEL */}
-                <button
+              <button
                 onClick={() => setShowDeleteModal(false)}
                 className="
-                    flex-1
-                    h-[44px]
-                    rounded-full
-                    bg-[#E5E7EB]
-                    text-[#111827]
-                    text-[16px]
-                    font-semibold
-                    active:scale-[0.97]
+                  flex-1
+                  h-[44px]
+                  rounded-full
+                  bg-[#E5E7EB]
+                  text-[#111827]
+                  text-[16px]
+                  font-semibold
                 "
-                >
+              >
                 Cancel
-                </button>
+              </button>
 
-                {/* DELETE */}
-                <button
+              <button
                 onClick={() => {
-                    setShowDeleteModal(false);
-                    clearSelection();
+                  setShowDeleteModal(false);
+                  clearSelection();
                 }}
                 className="
-                    flex-1
-                    h-[44px]
-                    rounded-full
-                    bg-[#E5E7EB]
-                    text-[#EF4444]
-                    text-[16px]
-                    font-semibold
-                    active:scale-[0.97]
+                  flex-1
+                  h-[44px]
+                  rounded-full
+                  bg-[#E5E7EB]
+                  text-[#EF4444]
+                  text-[16px]
+                  font-semibold
                 "
-                >
+              >
                 Delete
-                </button>
+              </button>
             </div>
-            </div>
+          </div>
         </div>
-        )}
-
+      )}
     </div>
   );
 }
@@ -349,10 +298,7 @@ function BottomSheet({
   onClose: () => void;
 }) {
   return (
-    <div
-      className="fixed inset-0 bg-black/40 z-50"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 bg-black/40 z-50" onClick={onClose}>
       <div
         className="
           absolute bottom-0 left-0 right-0

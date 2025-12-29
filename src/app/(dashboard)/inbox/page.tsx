@@ -145,7 +145,7 @@ export default function InboxPage() {
             </div>
 
             <div className="flex items-center gap-3 px-4 shrink-0">
-              <FilterButton onClick={() => console.log("Filter opened")} />
+              {/* <FilterButton onClick={() => console.log("Filter opened")} /> */}
               <TabSwitcher
                 tab={tab}
                 setTab={setTab}
@@ -168,7 +168,7 @@ export default function InboxPage() {
               </h3>
 
               {filtered24.slice(0, visible24).map((item, i) => (
-                <div className="mb-3"><NewsletterCard key={i} {...item} /></div>
+                <div className="mb-2"><NewsletterCard key={item.slug} {...item} /></div>
               ))}
 
               {showMore24 && <CenterButton onClick={loadMore24} />}
@@ -183,7 +183,7 @@ export default function InboxPage() {
               </h3>
 
               {filtered7.slice(0, visible7).map((item, i) => (
-                <NewsletterCard key={i} {...item} />
+                <div className="mb-2"><NewsletterCard key={item.slug} {...item} /></div>
               ))}
 
               {showMore7 && <CenterButton onClick={loadMore7} />}

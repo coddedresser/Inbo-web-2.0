@@ -5,6 +5,7 @@ import InterestedIn from "@/components/discover/InterestedIn";
 import NewsletterCarousel from "@/components/discover/NewsletterCarousel";
 import PublicationList from "@/components/discover/PublicationList";
 import PersonalizeDiscover from "@/components/discover/PersonalizeDiscover";
+import BottomNav from "@/components/layout/BottomNav";
 
 export default function MobileDiscoverSection({
   forYouItems,
@@ -56,6 +57,10 @@ export default function MobileDiscoverSection({
         <div className="mt-10 mx-2">
           <PersonalizeDiscover />
         </div>
+      </div>
+      {/* 👇 FIXED MOBILE BOTTOM NAV */}
+      <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+        <BottomNav />
       </div>
     </div>
   );

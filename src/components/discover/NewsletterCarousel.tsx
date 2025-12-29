@@ -64,7 +64,7 @@ export default function NewsletterCarousel({
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           {items.map((item, i) => (
-            <div key={i} className="min-w-[280px] relative pointer-events-auto">
+            <div key={i} className="min-w-[260px] relative pointer-events-auto">
               <NewsletterCard {...item} />
             </div>
           ))}

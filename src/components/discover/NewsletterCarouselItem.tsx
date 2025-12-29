@@ -1,5 +1,4 @@
 "use client";
-import { Mail } from "lucide-react";
 import Image from "next/image";
 import SubscribeButton from "../SubscribeButton";
 
@@ -26,7 +25,7 @@ export default function NewsletterCarouselItem({
     <div className="w-full max-w-[280px] flex-none p-4 bg-white rounded-[20px] shadow-sm flex flex-col gap-3 relative z-10">
 
       {/* IMAGE WITH TAG OVERLAY */}
-      <div className="relative w-full h-[173px] bg-[#F3F4F6] rounded-[16px] overflow-hidden">
+      <div className="relative w-full h-[153px] bg-[#F3F4F6] rounded-[16px] overflow-hidden">
 
         {/* TAG OVERLAY */}
         {tagLabel && (

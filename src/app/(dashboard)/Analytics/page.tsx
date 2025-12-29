@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-
+import { useRouter } from "next/navigation";
+ 
 import ReadingInsightsCard from "@/components/analytics/ReadingInsightsCard";
 import InboxOverview from "@/components/analytics/MoreLikeYouRead";
 import DailyStreakCard from "@/components/analytics/DailyStreakCard";
@@ -12,7 +13,7 @@ import AchievementsBottomSheet from "@/components/analytics/AchievementsBottomSh
 import MobileAnalyticsSection from "./MobileAnalyticsSection";
 
 /* TEMP placeholders — replace later */
-import { Star, Bookmark, ChevronUp } from "lucide-react";
+import { Star, ChevronUp } from "lucide-react";
 
 export const FavouriteRow = () => (
   <div
@@ -71,7 +72,7 @@ export const ReadLaterRow = () => (
 
 export default function AnalyticsPage() {
   const isMobile = useMediaQuery("(max-width: 768px)");
-
+  const Router=useRouter()
   const [isStreakOpen, setIsStreakOpen] = useState(false);
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
 
@@ -102,11 +103,11 @@ export default function AnalyticsPage() {
   return (
     <div className="w-full min-h-screen bg-[#F5F6FA]">
       {/* Desktop Header */}
-      <div className="w-full h-[72px] bg-white border-b border-[#E5E7EB] flex items-center px-8">
-        <h2 className="text-[24px] font-semibold text-[#0C1014]">
-          Analytics
-        </h2>
-      </div>
+          <div className="w-full">
+            <div className="w-full h-[78px] bg-white border border-[#E5E7EB] flex items-center justify-between px-6 shadow-sm">
+              <h2 className="text-[26px] font-bold text-[#0C1014]">Analytics</h2>
+            </div>
+          </div>
 
       {/* Subtitle BELOW header (styled correctly) */}
       <div className="px-8 pt-3 pb-2">
@@ -128,10 +129,10 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Row 3: Favourite | Read Later */}
-        <div className="col-span-6">
+        <div onClick={()=>{Router.push("/favorite")}} className="col-span-6">
           <FavouriteRow />
         </div>
-        <div className="col-span-6">
+        <div onClick={()=>{Router.push("/read_later")}} className="col-span-6">
           <ReadLaterRow />
         </div>
 

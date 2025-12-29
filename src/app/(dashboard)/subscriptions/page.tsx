@@ -468,7 +468,14 @@ function PublisherDetail({
         <div className="flex flex-col items-end gap-5">
           {/* Active Toggle */}
           <div className="flex items-center gap-3">
-            <span className="text-[16px] text-[#0C1014]">Active</span>
+            <span
+              style={{ fontFamily: "Segoe UI" }}
+              className={`text-[16px] font-medium ${
+                publisherState.active ? "text-[#0C1014]" : "text-[#A2AAB4]"
+              }`}
+            >
+              {publisherState.active ? "Active" : "Inactive"}
+            </span>
             <button
               onClick={toggleActive}
               className={`w-[36px] h-[20px] rounded-full relative transition ${
