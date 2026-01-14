@@ -230,9 +230,11 @@ export default function MobileSignupSection(props: any) {
                 <WhereStep
                   whereHeard={whereHeard}
                   setWhereHeard={setWhereHeard}
+                  categories={categories}
+                  reminder={reminder}
+                  reminderTime={reminderTime}
                   onContinue={() => setStep("notify")}
                   onBack={onBack}
-                  isLoading={isLoading}
                 />
               )}
 

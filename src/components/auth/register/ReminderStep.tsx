@@ -5,105 +5,152 @@ import {
   Train,
   Salad,
   Moon,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
-/* ================= WHEEL ================= */
+/* ================= IMPROVED TIME PICKER ================= */
 
-function Wheel({
-  values,
-  value,
-  onChange,
-}: {
-  values: string[];
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const ITEM_HEIGHT = 48;
-  const PADDING = 3; // MUST match padding count
+interface TimePickerProps {
+  hour: string;
+  setHour: (h: string) => void;
+  period: string;
+  setPeriod: (p: string) => void;
+}
 
-  const paddedValues = [
-    ...Array(PADDING).fill(""),
-    ...values,
-    ...Array(PADDING).fill(""),
-  ];
+function TimePicker({ hour, setHour, period, setPeriod }: TimePickerProps) {
+  const hours = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+  const periods = ["AM", "PM"];
 
-  /* ---------- scroll to selected value ---------- */
-  useEffect(() => {
-    if (!ref.current) return;
+  const currentHourIndex = hours.indexOf(hour);
+  const currentPeriodIndex = periods.indexOf(period);
 
-    const index = values.indexOf(value);
-    if (index === -1) return;
+  const incrementHour = () => {
+    const nextIndex = (currentHourIndex + 1) % hours.length;
+    setHour(hours[nextIndex]);
+  };
 
-    ref.current.scrollTo({
-      top: (index + PADDING) * ITEM_HEIGHT,
-      behavior: "instant" as ScrollBehavior,
-    });
-  }, [value, values]);
+  const decrementHour = () => {
+    const prevIndex = (currentHourIndex - 1 + hours.length) % hours.length;
+    setHour(hours[prevIndex]);
+  };
 
-  /* ---------- handle snapping ---------- */
-  useEffect(() => {
-    if (!ref.current) return;
-    const el = ref.current;
-
-    let raf: number | null = null;
-
-    const onScroll = () => {
-      if (raf) cancelAnimationFrame(raf);
-
-      raf = requestAnimationFrame(() => {
-        const rawIndex =
-          Math.round(el.scrollTop / ITEM_HEIGHT) - PADDING;
-
-        const index = Math.max(
-          0,
-          Math.min(values.length - 1, rawIndex)
-        );
-
-        const targetTop = (index + PADDING) * ITEM_HEIGHT;
-
-        // hard snap into place
-        el.scrollTo({
-          top: targetTop,
-          behavior: "smooth",
-        });
-
-        onChange(values[index]);
-      });
-    };
-
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [values, onChange]);
+  const togglePeriod = () => {
+    setPeriod(period === "AM" ? "PM" : "AM");
+  };
 
   return (
-    <div className="relative h-[144px] w-[80px] overflow-hidden">
-      {/* Selection window */}
-      <div className="absolute top-1/2 -translate-y-1/2 h-[48px] w-full border border-black rounded-xl pointer-events-none z-10" />
-
-      <div
-        ref={ref}
-        className="h-full overflow-y-scroll snap-y snap-mandatory"
-        style={{
-          scrollbarWidth: "none",
-          overscrollBehavior: "contain",
-        }}
-      >
-        {paddedValues.map((v, i) => (
-          <div
-            key={i}
-            className="h-[48px] flex items-center justify-center snap-center text-[22px] font-semibold text-[#0C1014]"
-          >
-            {v}
-          </div>
-        ))}
+    <div className="flex items-center justify-center gap-3">
+      {/* Hour Picker */}
+      <div className="flex flex-col items-center">
+        <button
+          onClick={incrementHour}
+          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="Increase hour"
+        >
+          <ChevronUp size={20} className="text-gray-600" />
+        </button>
+        
+        <div className="w-14 h-12 flex items-center justify-center border-2 border-[#C46A54] rounded-xl bg-white">
+          <span className="text-2xl font-bold text-[#0C1014]">{hour}</span>
+        </div>
+        
+        <button
+          onClick={decrementHour}
+          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="Decrease hour"
+        >
+          <ChevronDown size={20} className="text-gray-600" />
+        </button>
       </div>
+
+      {/* Separator */}
+      <div className="text-2xl font-bold text-[#0C1014]">:</div>
+
+      {/* Minutes (fixed at 00) */}
+      <div className="flex flex-col items-center">
+        <div className="p-1 opacity-0">
+          <ChevronUp size={20} />
+        </div>
+        
+        <div className="w-14 h-12 flex items-center justify-center border-2 border-gray-200 rounded-xl bg-gray-50">
+          <span className="text-2xl font-bold text-gray-400">00</span>
+        </div>
+        
+        <div className="p-1 opacity-0">
+          <ChevronDown size={20} />
+        </div>
+      </div>
+
+      {/* AM/PM Picker */}
+      <div className="flex flex-col items-center ml-1">
+        <button
+          onClick={togglePeriod}
+          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="Toggle AM/PM"
+        >
+          <ChevronUp size={20} className="text-gray-600" />
+        </button>
+        
+        <div 
+          onClick={togglePeriod}
+          className="w-12 h-12 flex items-center justify-center border-2 border-[#C46A54] rounded-xl bg-[#FDF6F4] cursor-pointer hover:bg-[#FAE8E4] transition-colors"
+        >
+          <span className="text-lg font-bold text-[#C46A54]">{period}</span>
+        </div>
+        
+        <button
+          onClick={togglePeriod}
+          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="Toggle AM/PM"
+        >
+          <ChevronDown size={20} className="text-gray-600" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ================= PRESET TIME BUTTONS ================= */
+
+interface PresetTimesProps {
+  hour: string;
+  period: string;
+  onSelect: (h: string, p: string) => void;
+}
+
+function PresetTimes({ hour, period, onSelect }: PresetTimesProps) {
+  const presets = [
+    { label: "6 AM", hour: "6", period: "AM" },
+    { label: "8 AM", hour: "8", period: "AM" },
+    { label: "12 PM", hour: "12", period: "PM" },
+    { label: "6 PM", hour: "6", period: "PM" },
+    { label: "9 PM", hour: "9", period: "PM" },
+  ];
+
+  return (
+    <div className="flex flex-wrap justify-center gap-2 mt-3">
+      {presets.map((preset) => {
+        const isActive = hour === preset.hour && period === preset.period;
+        return (
+          <button
+            key={preset.label}
+            onClick={() => onSelect(preset.hour, preset.period)}
+            className={`
+              px-3 py-1.5 rounded-full text-sm font-medium transition-all
+              ${isActive 
+                ? "bg-[#C46A54] text-white" 
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }
+            `}
+          >
+            {preset.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -185,14 +232,14 @@ export default function ReminderStep({
   );
 
   return (
-    <div className="w-full max-h-screen flex flex-col items-center px-4">
+    <div className="w-full flex flex-col items-center px-4">
       {/* ---------------- TITLE ---------------- */}
-      <div className="text-center mt-6 mb-8 max-w-[360px]">
-        <h1 className="text-[28px] font-bold leading-[34px] text-[#0C1014]">
+      <div className="text-center mb-4 max-w-[360px]">
+        <h1 className="text-[24px] md:text-[26px] font-bold leading-[30px] text-[#0C1014]">
           Would you like to get a reading reminder?
         </h1>
 
-        <p className="mt-3 text-[15px] leading-[22px] text-[#6F7680]">
+        <p className="mt-1.5 text-[13px] leading-[18px] text-[#6F7680]">
           Having a specific time set apart for reading can help build a habit and
           be more consistent
         </p>
@@ -201,7 +248,7 @@ export default function ReminderStep({
       {/* ================= VIEW 1 ================= */}
       {!showTimeSelect && (
         <>
-          <div className="w-full max-w-[380px] flex flex-col gap-3">
+          <div className="w-full max-w-[380px] flex flex-col gap-2">
             {options.map(({ key, label, icon: Icon, color }) => {
               const active = reminder === key;
 
@@ -210,16 +257,16 @@ export default function ReminderStep({
                   key={key}
                   onClick={() => setReminder(key)}
                   className={`
-                    flex items-center gap-4 px-5 py-4
-                    border transition-all text-[15px]
+                    flex items-center gap-3 px-4 py-3
+                    border transition-all text-[14px]
                     ${radius}
                     ${active
                       ? "bg-[#F6ECE7] border-[#C46A54]"
                       : "bg-[#F5F7F9] border-transparent"}
                   `}
                 >
-                  <span className="flex items-center justify-center w-8 h-8" style={{ color }}>
-                    <Icon size={22} strokeWidth={2} />
+                  <span className="flex items-center justify-center w-7 h-7" style={{ color }}>
+                    <Icon size={20} strokeWidth={2} />
                   </span>
                   <span className="text-[#0C1014] font-medium">{label}</span>
                 </button>
@@ -229,8 +276,8 @@ export default function ReminderStep({
 
           {!isMobile && (
             <>
-              <div className="mt-10 w-[280px]">{CTAButton}</div>
-              <button onClick={onBack} className="mt-4 text-md font-semibold underline">← Back</button>
+              <div className="mt-6 w-[280px]">{CTAButton}</div>
+              <button onClick={onBack} className="mt-3 text-md font-semibold underline">← Back</button>
               <button onClick={handleSkip} className="mt-3 text-sm underline text-[#6F7680]">Skip</button>
             </>
           )}
@@ -240,38 +287,44 @@ export default function ReminderStep({
       {/* ================= VIEW 2 ================= */}
       {showTimeSelect && (
         <>
-          <div className={`w-full max-w-[380px] bg-white border border-[#E9EAEE] shadow-sm text-center p-8 mb-6 ${radius}`}>
-            <h2 className="text-[20px] font-semibold mb-3">Perfect!</h2>
+          <div className={`w-full max-w-[380px] bg-white border border-[#E9EAEE] shadow-sm text-center p-5 mb-4 ${radius}`}>
+            <h2 className="text-[18px] font-semibold mb-2">Perfect!</h2>
 
-            <p className="text-[14px] text-[#6F7680] mb-8">
+            <p className="text-[13px] text-[#6F7680] mb-4">
               We’ll send you a reminder one hour before your reading.
             </p>
 
-            {/* ================= iOS STYLE TIME ================= */}
-            <div className="flex justify-center gap-8">
-              <Wheel
-                values={["1","2","3","4","5","6","7","8","9","10","11","12"]}
-                value={hour}
-                onChange={setHour}
-              />
-              <Wheel
-                values={["AM","PM"]}
-                value={period}
-                onChange={setPeriod}
-              />
-            </div>
+            {/* ================= IMPROVED TIME PICKER ================= */}
+            <TimePicker
+              hour={hour}
+              setHour={setHour}
+              period={period}
+              setPeriod={setPeriod}
+            />
 
-            {/* Selected time */}
-            <div className="mt-6 text-[22px] font-semibold text-[#0C1014]">
-              {hour}:00 {period}
+            {/* Quick preset times */}
+            <PresetTimes
+              hour={hour}
+              period={period}
+              onSelect={(h, p) => {
+                setHour(h);
+                setPeriod(p);
+              }}
+            />
+
+            {/* Selected time display */}
+            <div className="mt-4 py-2 px-4 bg-[#F6ECE7] rounded-xl inline-block">
+              <span className="text-[16px] font-semibold text-[#C46A54]">
+                Reminder at {hour}:00 {period}
+              </span>
             </div>
           </div>
 
           {!isMobile && (
             <>
               <div className="w-[280px]">{CTAButton}</div>
-              <button onClick={() => setShowTimeSelect(false)} className="mt-4 underline font-semibold">← Back</button>
-              <button onClick={handleSkip} className="mt-3 text-sm underline text-[#6F7680]">Skip</button>
+              <button onClick={() => setShowTimeSelect(false)} className="mt-3 underline font-semibold text-sm">← Back</button>
+              <button onClick={handleSkip} className="mt-2 text-sm underline text-[#6F7680]">Skip</button>
             </>
           )}
         </>

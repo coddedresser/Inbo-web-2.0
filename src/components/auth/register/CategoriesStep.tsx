@@ -17,18 +17,123 @@ import {
   Drama,
   Leaf,
   Newspaper,
+  Loader2,
+  type LucideIcon,
 } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useEffect, useState } from "react";
+import { userService, type Category } from "@/services/user";
+
+// Icon mapping for categories
+const categoryIconMap: Record<string, LucideIcon> = {
+  tech: Laptop,
+  technology: Laptop,
+  startups: Rocket,
+  startup: Rocket,
+  business: BarChartBig,
+  finance: Landmark,
+  crypto: Repeat2,
+  cryptocurrency: Repeat2,
+  news: Newspaper,
+  culture: Drama,
+  entertainment: Clapperboard,
+  productivity: CheckSquare2,
+  "personal growth": Leaf,
+  "personal-growth": Leaf,
+  health: HeartPulse,
+  wellness: HeartPulse,
+  default: Sparkles,
+};
+
+// Color mapping for categories
+const categoryColorMap: Record<string, string> = {
+  tech: "text-blue-600",
+  technology: "text-blue-600",
+  startups: "text-orange-600",
+  startup: "text-orange-600",
+  business: "text-indigo-600",
+  finance: "text-emerald-600",
+  crypto: "text-yellow-600",
+  cryptocurrency: "text-yellow-600",
+  news: "text-gray-600",
+  culture: "text-purple-600",
+  entertainment: "text-pink-600",
+  productivity: "text-green-600",
+  "personal growth": "text-green-700",
+  "personal-growth": "text-green-700",
+  health: "text-red-500",
+  wellness: "text-red-500",
+  default: "text-gray-500",
+};
+
+// Helper to get icon for a category
+const getCategoryIcon = (name: string): LucideIcon => {
+  const key = name.toLowerCase();
+  return categoryIconMap[key] || categoryIconMap.default;
+};
+
+// Helper to get color for a category
+const getCategoryColor = (name: string): string => {
+  const key = name.toLowerCase();
+  return categoryColorMap[key] || categoryColorMap.default;
+};
+
+interface CategoriesStepProps {
+  categories: string[];
+  toggleCategory: (category: string) => void;
+  onContinue: () => void;
+  onBack: () => void;
+}
 
 export default function CategoriesStep({
   categories,
   toggleCategory,
   onContinue,
   onBack,
-}: any) {
+}: CategoriesStepProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const canContinue = categories.length >= 3;
+  
+  // State for fetched categories
+  const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const response = await userService.getCategories();
+        if (response.categories && response.categories.length > 0) {
+          setAvailableCategories(response.categories);
+        } else {
+          // Fallback to default categories if API returns empty
+          setAvailableCategories(defaultCategories);
+        }
+      } catch (err) {
+        console.error("Failed to fetch categories:", err);
+        setError("Failed to load categories");
+        // Use fallback categories on error
+        setAvailableCategories(defaultCategories);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-[#C46A54]" size={40} />
+        <p className="mt-4 text-[#6F7680]">Loading categories...</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -38,6 +143,7 @@ export default function CategoriesStep({
           toggleCategory={toggleCategory}
           canContinue={canContinue}
           onContinue={onContinue}
+          availableCategories={availableCategories}
         />
       ) : (
         <DesktopLayout
@@ -46,15 +152,39 @@ export default function CategoriesStep({
           canContinue={canContinue}
           onContinue={onContinue}
           onBack={onBack}
+          availableCategories={availableCategories}
         />
       )}
     </>
   );
 }
 
+// Default/fallback categories
+const defaultCategories: Category[] = [
+  { id: "1", name: "Tech" },
+  { id: "2", name: "Startups" },
+  { id: "3", name: "Business" },
+  { id: "4", name: "Finance" },
+  { id: "5", name: "Crypto" },
+  { id: "6", name: "News" },
+  { id: "7", name: "Culture" },
+  { id: "8", name: "Entertainment" },
+  { id: "9", name: "Productivity" },
+  { id: "10", name: "Personal Growth" },
+];
+
 /* ---------------------------------- */
 /* Desktop Layout (unchanged UI) */
 /* ---------------------------------- */
+
+interface LayoutProps {
+  categories: string[];
+  toggleCategory: (category: string) => void;
+  canContinue: boolean;
+  onContinue: () => void;
+  onBack?: () => void;
+  availableCategories: Category[];
+}
 
 function DesktopLayout({
   categories,
@@ -62,15 +192,20 @@ function DesktopLayout({
   canContinue,
   onContinue,
   onBack,
-}: any) {
+  availableCategories,
+}: LayoutProps) {
   return (
     <div className="w-full flex flex-col items-center justify-center">
       <Title />
-      <CategoriesGrid categories={categories} toggleCategory={toggleCategory} />
+      <CategoriesGrid 
+        categories={categories} 
+        toggleCategory={toggleCategory} 
+        availableCategories={availableCategories}
+      />
 
-      <div className="mt-8 flex flex-col items-center gap-6">
+      <div className="mt-5 flex flex-col items-center gap-4">
         <CTAButton canContinue={canContinue} onContinue={onContinue} />
-        <BackButton onBack={onBack} />
+        {onBack && <BackButton onBack={onBack} />}
       </div>
     </div>
   );
@@ -85,7 +220,8 @@ function MobileLayout({
   toggleCategory,
   canContinue,
   onContinue,
-}: any) {
+  availableCategories,
+}: LayoutProps) {
   return (
     <div className="max-w-screen max-h-screen flex flex-col">
       {/* Scrollable content */}
@@ -95,6 +231,7 @@ function MobileLayout({
           categories={categories}
           toggleCategory={toggleCategory}
           maxWidth="max-w-full"
+          availableCategories={availableCategories}
         />
       </div>
 
@@ -113,8 +250,8 @@ function MobileLayout({
 
 function Title() {
   return (
-    <div className="text-center mb-8">
-      <h1 className="text-[32px] font-bold text-[#0C1014] leading-[38px]">
+    <div className="text-center mb-5">
+      <h1 className="text-[26px] font-bold text-[#0C1014] leading-[32px]">
         Please select Topics you
         <br />
         are interested in
@@ -123,38 +260,34 @@ function Title() {
   );
 }
 
+interface CategoriesGridProps {
+  categories: string[];
+  toggleCategory: (category: string) => void;
+  maxWidth?: string;
+  availableCategories: Category[];
+}
+
 function CategoriesGrid({
   categories,
   toggleCategory,
   maxWidth = "max-w-[580px]",
-}: any) {
-  const allCategories = [
-  { label: "Tech", icon: Laptop, color: "text-blue-600" },
-  { label: "Startups", icon: Rocket, color: "text-orange-600" },
-  { label: "Business", icon: BarChartBig, color: "text-indigo-600" },
-  { label: "Finance", icon: Landmark, color: "text-emerald-600" },
-  { label: "Crypto", icon: Repeat2, color: "text-yellow-600" },
-  { label: "News", icon: Newspaper, color: "text-gray-600" },
-  { label: "Culture", icon: Drama, color: "text-purple-600" },
-  { label: "Entertainment", icon: Clapperboard, color: "text-pink-600" },
-  { label: "Productivity", icon: CheckSquare2, color: "text-green-600" },
-  { label: "Personal Growth", icon: Leaf, color: "text-green-700" },
-];
-
-
+  availableCategories,
+}: CategoriesGridProps) {
   return (
-    <div className={`flex flex-wrap justify-center gap-3 ${maxWidth}`}>
-      {allCategories.map(({ label, icon: Icon,color }) => {
-        const active = categories.includes(label);
+    <div className={`flex flex-wrap justify-center gap-2 ${maxWidth}`}>
+      {availableCategories.map((category) => {
+        const active = categories.includes(category.name);
+        const Icon = getCategoryIcon(category.name);
+        const color = getCategoryColor(category.name);
 
         return (
           <button
-            key={label}
-            onClick={() => toggleCategory(label)}
+            key={category.id}
+            onClick={() => toggleCategory(category.name)}
             className={`
-              flex items-center gap-3
-              px-4 py-2.5 rounded-2xl md:rounded-full border
-              text-[17px] whitespace-nowrap transition-all
+              flex items-center gap-2
+              px-3 py-2 rounded-2xl md:rounded-full border
+              text-[15px] whitespace-nowrap transition-all
               ${
                 active
                   ? "bg-[#F6ECE7] border-[#C46A54]"
@@ -163,20 +296,15 @@ function CategoriesGrid({
             `}
           >
             <Icon
-              size={18}
+              size={16}
               className={`
                 transition-all
-                ${color}
-                ${
-                  active
-                    ? "text-[#C46A54]"
-                    : "text-[#0C1014]"
-                }
+                ${active ? "text-[#C46A54]" : color}
               `}
             />
 
             <span className="text-[18px] text-[#0C1014]">
-              {label}
+              {category.name}
             </span>
           </button>
         );

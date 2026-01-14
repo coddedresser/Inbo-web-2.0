@@ -180,7 +180,7 @@ export default function EmailStep({
           disabled:opacity-50
         "
       >
-        {isLoading ? "Sending..." : "Send Link"}
+        {isLoading ? "Sending..." : "Send Code"}
       </button>
 
       {/* Simulate Button */}

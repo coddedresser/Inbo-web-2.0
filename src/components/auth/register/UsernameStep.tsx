@@ -98,8 +98,8 @@ const UsernameInput = ({
 
 const Suggestions = ({ list, selectedSuggestion, setSelectedSuggestion, setFormData }: any) => (
   <>
-    <div className="flex items-center justify-between mt-6 mb-2">
-      <span className="text-[#6F7680] text-[16px]">
+    <div className="flex items-center justify-between mt-4 mb-1.5">
+      <span className="text-[#6F7680] text-[15px]">
         Available options
       </span>
     </div>
@@ -116,11 +116,11 @@ const Suggestions = ({ list, selectedSuggestion, setSelectedSuggestion, setFormD
               setSelectedSuggestion?.(name);
               setFormData((p: any) => ({ ...p, username: name }));
             }}
-            className={`w-full flex items-center justify-between px-4 py-4 border-b last:border-b-0 transition
+            className={`w-full flex items-center justify-between px-4 py-3 border-b last:border-b-0 transition text-[15px]
               ${selected ? "bg-white" : "hover:bg-[#ECEDEF]"}`}
           >
             <span className="font-medium">{name}@inbo.me</span>
-            <CheckCircle2 className="text-green-600" />
+            <CheckCircle2 className="text-green-600" size={18} />
           </button>
         );
       })}
@@ -129,9 +129,9 @@ const Suggestions = ({ list, selectedSuggestion, setSelectedSuggestion, setFormD
 );
 
 const DesktopWarning = () => (
-  <div className="mt-6 px-4 py-3 rounded-xl bg-[#FFF6EB] border border-[#FFDEBF] flex gap-3 items-start">
-    <AlertCircle size={20} className="text-[#E59500] mt-[2px]" />
-    <p className="text-[#E59500] text-[15px] font-medium leading-[20px]">
+  <div className="mt-4 px-3 py-2 rounded-xl bg-[#FFF6EB] border border-[#FFDEBF] flex gap-2 items-start">
+    <AlertCircle size={18} className="text-[#E59500] mt-[2px]" />
+    <p className="text-[#E59500] text-[14px] font-medium leading-[18px]">
       You can’t change this later, so choose wisely!
     </p>
   </div>
@@ -216,8 +216,8 @@ const UsernameStep = forwardRef(function UsernameStep(
 
       try {
         const response = await userService.checkInboxAvailability(debouncedUsername);
-        setIsAvailable(response.is_available);
-        setAvailabilityMessage(response.message || (response.is_available ? "Username is available!" : "Username is taken"));
+        setIsAvailable(response.available);
+        setAvailabilityMessage(response.message || (response.available ? "Username is available!" : "Username is taken"));
       } catch (err: any) {
         console.error("Availability check failed:", err);
         setIsAvailable(false);
@@ -358,17 +358,17 @@ const UsernameStep = forwardRef(function UsernameStep(
   return (
     <div className="w-full h-full flex items-center justify-center bg-white">
       <div className="max-w-[420px] w-full text-center">
-        <h1 className="text-[32px] font-bold text-[#0C1014]">
+        <h1 className="text-[26px] font-bold text-[#0C1014]">
           Pick your INBO address!
         </h1>
 
-        <p className="text-[#6F7680] mt-3">
+        <p className="text-[#6F7680] mt-2 text-[14px]">
           This will be your new email for newsletters
           <br />
           no spam, just good stuff.
         </p>
 
-        <div className="mt-8 text-left">
+        <div className="mt-5 text-left">
           <UsernameInput
             formData={formData}
             setFormData={setFormData}
@@ -396,7 +396,7 @@ const UsernameStep = forwardRef(function UsernameStep(
           <DesktopWarning />
 
           {error && (
-            <div className="mt-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200">
+            <div className="mt-3 px-3 py-2 rounded-xl bg-red-50 border border-red-200">
               <p className="text-red-600 text-sm">{error}</p>
             </div>
           )}
@@ -405,7 +405,7 @@ const UsernameStep = forwardRef(function UsernameStep(
         <button
           onClick={handleContinue}
           disabled={!canContinue || isCreating}
-          className={`w-full mt-8 py-4 rounded-full text-[16px] font-medium transition
+          className={`w-full mt-5 py-3.5 rounded-full text-[15px] font-medium transition
             ${canContinue && !isCreating
               ? "bg-[#C46A54] text-white"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -413,7 +413,7 @@ const UsernameStep = forwardRef(function UsernameStep(
         >
           {isCreating ? (
             <span className="flex items-center justify-center gap-2">
-              <Loader2 size={20} className="animate-spin" /> Creating inbox...
+              <Loader2 size={18} className="animate-spin" /> Creating inbox...
             </span>
           ) : (
             "Start reading"
@@ -422,7 +422,7 @@ const UsernameStep = forwardRef(function UsernameStep(
 
         <button
           onClick={onBack}
-          className="mt-3 text-[#6F7680] underline text-sm"
+          className="mt-2 text-[#6F7680] underline text-sm"
         >
           ← Back
         </button>

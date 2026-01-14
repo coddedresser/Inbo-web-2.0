@@ -178,7 +178,7 @@ export default function SignupPage() {
     <>
       <SEOHead title="Sign up" description="Create an account" />
 
-      <div className="flex h-screen bg-white">
+      <div className="flex h-screen overflow-hidden bg-white">
         {showCarousel && (
           <div className="hidden lg:flex w-1/2 h-full">
             <AuthCarousel />
@@ -187,14 +187,14 @@ export default function SignupPage() {
 
         <div
           className={`
-            flex flex-col relative text-[#0C1014]
+            flex flex-col relative text-[#0C1014] h-full overflow-y-auto
             ${showCarousel ? "w-full lg:w-1/2" : "w-full items-center justify-center"}
           `}
         >
           <div
             className={`
-              flex flex-col items-center justify-center
-              px-10
+              flex flex-col items-center justify-center min-h-full
+              px-10 py-6
               ${showCarousel ? "flex-1" : "w-full max-w-[700px] mx-auto"}
             `}
           >
@@ -204,11 +204,11 @@ export default function SignupPage() {
                 width={140}
                 height={55}
                 alt="Logo"
-                className="mb-10"
+                className="mb-6 flex-shrink-0"
               />
             )}
 
-            <div className="w-full max-w-[380px]">
+            <div className="w-full max-w-[380px] flex-shrink-0">
               {step === "email" && (
                 <EmailStep
                   formData={formData}
@@ -270,14 +270,16 @@ export default function SignupPage() {
                 <WhereStep
                   whereHeard={whereHeard}
                   setWhereHeard={setWhereHeard}
+                  categories={categories}
+                  reminder={reminder}
+                  reminderTime={reminderTime}
                   onContinue={handleFinalSubmit}
                   onBack={handleBack}
-                  isLoading={isLoading}
                 />
               )}
             </div>
 
-            <div className="mt-10 text-center">
+            <div className="mt-6 text-center flex-shrink-0">
               <span className="text-[#6F7680] mr-2 text-lg">Language</span>
               <select
                 value={i18n.language}

@@ -67,15 +67,22 @@ class AuthService {
    * Verify OTP and get JWT tokens
    */
   async verifyOTP(email: string, otp: string, deviceInfo?: object): Promise<VerifyOTPResponse> {
-    const response = await apiClient.post<VerifyOTPResponse>(AUTH_ENDPOINTS.VERIFY_OTP, {
+    const payload = {
       email,
-      otp,
+      otp: otp.toString(), // Ensure OTP is a string
       deviceInfo: deviceInfo || {
-        deviceName: typeof navigator !== 'undefined' ? navigator.userAgent : 'Web Browser',
+        deviceName: typeof navigator !== 'undefined' ? navigator.userAgent.substring(0, 50) : 'Web Browser',
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
         ip: '',
       },
-    });
+    };
+    
+    console.log("Verify OTP Request:", { email, otp: otp, deviceInfo: payload.deviceInfo });
+    
+    const response = await apiClient.post<VerifyOTPResponse>(AUTH_ENDPOINTS.VERIFY_OTP, payload);
+    
+    console.log("Verify OTP Response:", response.data);
+    
     this.setTokens(response.data.accessToken, response.data.refreshToken);
     return response.data;
   }

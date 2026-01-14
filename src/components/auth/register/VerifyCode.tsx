@@ -37,6 +37,7 @@ export default function VerifyCodePage({
   const [code, setCode] = useState<string[]>(["", "", "", ""]);
   const [timer, setTimer] = useState(60);
   const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const [isVerifying, setIsVerifying] = useState(false);
 
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
@@ -58,20 +59,39 @@ export default function VerifyCodePage({
   /* ---------------- AUTO SUBMIT ---------------- */
   useEffect(() => {
     const verifyCode = async () => {
-      if (code.every((d) => d !== "") && !isVerifying) {
+      const allFilled = code.every((d) => d !== "");
+      
+      if (allFilled && !isVerifying && !hasError) {
         const finalCode = code.join("");
+        
+        // Validate OTP is exactly 4 digits
+        if (finalCode.length !== 4 || !/^\d{4}$/.test(finalCode)) {
+          console.error("Invalid OTP format:", finalCode);
+          return;
+        }
+        
         setIsVerifying(true);
         setHasError(false);
 
         try {
           if (onVerify) {
+            console.log("Verifying OTP:", finalCode);
             await onVerify(finalCode);
           } else if (devMode && onSimulateOpen) {
             // Dev mode fallback
             setTimeout(onSimulateOpen, 300);
           }
-        } catch (error) {
+        } catch (error: any) {
+          console.error("OTP verification error:", error?.response?.data || error);
           setHasError(true);
+          setErrorMessage(
+            error?.response?.data?.message || 
+            error?.message || 
+            "Invalid or expired OTP. Please try again."
+          );
+          // Clear the code on error so user can re-enter
+          setCode(["", "", "", ""]);
+          inputsRef.current[0]?.focus();
         } finally {
           setIsVerifying(false);
         }
@@ -79,6 +99,7 @@ export default function VerifyCodePage({
     };
 
     verifyCode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
   /* ---------------- HANDLERS ---------------- */
@@ -89,6 +110,7 @@ export default function VerifyCodePage({
     next[index] = value;
     setCode(next);
     setHasError(false);
+    setErrorMessage("");
 
     if (value && index < 3) {
       inputsRef.current[index + 1]?.focus();
@@ -123,6 +145,7 @@ export default function VerifyCodePage({
     setTimer(60);
     setCode(["", "", "", ""]);
     setHasError(false);
+    setErrorMessage("");
     inputsRef.current[0]?.focus();
     onResend?.();
   };
@@ -180,7 +203,7 @@ export default function VerifyCodePage({
         {/* ERROR MESSAGE */}
         {hasError && (
           <p className="mt-4 text-[15px] text-red-500">
-            This OTP doesn’t match. Recheck and enter again.
+            {errorMessage || "This OTP doesn't match. Recheck and enter again."}
           </p>
         )}
         {/* VERIFYING STATE */}
@@ -258,7 +281,7 @@ export default function VerifyCodePage({
       {/* ERROR MESSAGE */}
       {hasError && (
         <p className="mt-4 text-[15px] text-red-500">
-          Invalid OTP. Please try again.
+          {errorMessage || "Invalid OTP. Please try again."}
         </p>
       )}
 
