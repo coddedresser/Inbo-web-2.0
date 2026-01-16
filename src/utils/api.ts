@@ -14,15 +14,10 @@ const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor - Add auth token and route through proxy
+// Request interceptor - Add auth token
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = Cookies.get('access_token');
-    
-    // All requests now go through /api/... proxy route (same origin)
-    if (IS_BROWSER && config.url && !config.url.startsWith('/api/')) {
-      config.url = `/api${config.url}`;
-    }
     
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
