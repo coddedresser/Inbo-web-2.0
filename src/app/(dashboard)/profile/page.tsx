@@ -269,6 +269,8 @@ export default function ProfileSection() {
         copyToClipboard={copyToClipboard}
         loadingProfile={loadingProfile}
         profileError={profileError}
+        profile={profile}
+        onSave={handleSaveProfile}
         onEdit={() => setShowEditModal(true)}
       />
     );

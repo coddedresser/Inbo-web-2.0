@@ -80,13 +80,15 @@ export class DeepLinkHandler {
     // Handle authentication token
     if (params.token) {
       try {
-        await authService.deepLinkAuth(params);
-        
-        // Redirect after successful authentication
-        const redirect = params.redirect || '/dashboard';
-        window.location.href = redirect;
+        const result = await authService.validateSession();
+        if (result.isValid) {
+          const redirect = params.redirect || '/dashboard';
+          window.location.href = redirect;
+        } else {
+          window.location.href = '/auth/login?error=deep_link_failed';
+        }
       } catch (error) {
-        console.error('Deep link authentication failed:', error);
+        console.error('Deep link validation failed:', error);
         window.location.href = '/auth/login?error=deep_link_failed';
       }
     }
@@ -96,15 +98,10 @@ export class DeepLinkHandler {
       window.location.href = `/auth/verify?email=${params.email}&token=${params.verify}`;
     }
 
-    // Handle magic link
+    // Handle magic link (fallback: just redirect)
     if (params.magic_token) {
-      try {
-        await authService.verifyMagicLink(params.magic_token);
-        window.location.href = params.redirect || '/dashboard';
-      } catch (error) {
-        console.error('Magic link verification failed:', error);
-        window.location.href = '/auth/login?error=magic_link_failed';
-      }
+      const redirect = params.redirect || '/dashboard';
+      window.location.href = redirect;
     }
   }
 

@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 
 export default function AuthTestPage() {
-  const [tokenInfo, setTokenInfo] = useState<{ 
-    hasToken: boolean; 
+  const [tokenInfo, setTokenInfo] = useState<{
+    hasToken: boolean;
     tokenPreview: string;
-    cookies: any;
+    cookies: Record<string, string>;
   } | null>(null);
 
   useEffect(() => {

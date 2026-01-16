@@ -8,15 +8,15 @@ export default function TabSwitcher({
   tab,
   setTab,
   unreadCount,
-  readCount,
-  allCount,
+  readCount = 0,
+  allCount = 0,
   className = "",
 }: {
   tab: TabType;
   setTab: (value: TabType) => void;
   unreadCount: number;
-  readCount: number;
-  allCount: number;
+  readCount?: number;
+  allCount?: number;
   className?: string;
 }) {
   const items = [

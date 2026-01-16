@@ -5,6 +5,7 @@ import { ArrowLeft, ChevronRight, Pencil, BarChart3 } from "lucide-react";
 import { getInitials } from "./page";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import type { UserProfileResponse } from "@/services/user";
 import { useAuth } from "@/contexts/AuthContext";
 import EditProfileModal from "@/components/profile/EditProfileModal";
 import ThemeBottomSheet from "@/components/profile/ThemeBottomSheet";
@@ -82,7 +83,21 @@ export default function MobileProfileSection({
   copyToClipboard,
   loadingProfile,
   profileError,
-}: any) {
+  profile,
+  onSave,
+}: {
+  activePage: any;
+  setActivePage: (v: any) => void;
+  user: any;
+  appearance: "light" | "dark" | "system";
+  setAppearance: (v: "light" | "dark" | "system") => void;
+  copyToClipboard: () => void;
+  loadingProfile: boolean;
+  profileError: string | null;
+  profile: UserProfileResponse | null;
+  onSave: (data: { name?: string; birthYear?: string; gender?: string }) => Promise<void>;
+  onEdit?: () => void;
+}) {
   const router = useRouter();
   const { logout } = useAuth();
   const [notifications, setNotifications] = useState(true);
@@ -333,6 +348,8 @@ export default function MobileProfileSection({
       <EditProfileModal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
+        profile={profile}
+        onSave={onSave}
       />
 
       {/* ⭐ THEME BOTTOM SHEET */}

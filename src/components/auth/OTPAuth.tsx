@@ -12,7 +12,7 @@ interface OTPAuthProps {
 }
 
 export const OTPAuth: React.FC<OTPAuthProps> = ({ email, phone, onSuccess, onError }) => {
-  const { requestOTP, verifyOTP } = useAuth();
+  const { sendOTP, verifyOTP } = useAuth();
   const { t } = useTranslation('auth');
   const [step, setStep] = useState<'request' | 'verify'>('request');
   const [otpEmail, setOtpEmail] = useState(email || '');
@@ -32,8 +32,8 @@ export const OTPAuth: React.FC<OTPAuthProps> = ({ email, phone, onSuccess, onErr
     setError(null);
 
     try {
-      const response = await requestOTP(otpEmail || undefined, otpPhone || undefined);
-      setExpiresIn(response.expires_in);
+      await sendOTP(otpEmail);
+      setExpiresIn(300);
       setStep('verify');
     } catch (err: any) {
       setError(err?.response?.data?.message || t('otpRequestFailed'));
@@ -53,11 +53,7 @@ export const OTPAuth: React.FC<OTPAuthProps> = ({ email, phone, onSuccess, onErr
     setError(null);
 
     try {
-      await verifyOTP({
-        email: otpEmail || undefined,
-        phone: otpPhone || undefined,
-        otp: otpCode,
-      });
+      await verifyOTP(otpEmail, otpCode);
       onSuccess?.();
     } catch (err: any) {
       setError(err?.response?.data?.message || t('otpVerificationFailed'));

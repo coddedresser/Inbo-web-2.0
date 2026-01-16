@@ -69,7 +69,7 @@ export default function EmailThumbnail({
       // Check cache first
       if (thumbnailCache.has(emailId)) {
         const cached = thumbnailCache.get(emailId);
-        setThumbnail(cached);
+        setThumbnail(cached ?? null);
         return;
       }
 

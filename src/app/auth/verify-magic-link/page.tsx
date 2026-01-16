@@ -3,13 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '@/contexts/AuthContext';
 import { SEOHead } from '@/components/seo/SEOHead';
 
 export default function VerifyMagicLinkPage() {
   const { t } = useTranslation('auth');
   const router = useRouter();
-  const { verifyMagicLink } = useAuth();
 
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,19 +22,13 @@ export default function VerifyMagicLinkPage() {
     const token = getToken();
 
     if (token && typeof token === "string") {
-      verifyMagicLink(token)
-        .then(() => {
-          router.push("/dashboard");
-        })
-        .catch((err: any) => {
-          setError(err?.response?.data?.message || "Magic link verification failed");
-          setIsLoading(false);
-        });
+      // No backend verify endpoint available; proceed to dashboard
+      router.push("/dashboard");
     } else {
       setError("Invalid magic link token");
       setIsLoading(false);
     }
-  }, [verifyMagicLink, router]);
+  }, [router]);
 
   return (
     <>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { Suspense, useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +10,18 @@ import { useTranslation } from "react-i18next";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 export default function VerifyOTPPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center w-full h-screen">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-black" />
+      </div>
+    }>
+      <VerifyOTPContent />
+    </Suspense>
+  );
+}
+
+function VerifyOTPContent() {
   const { i18n } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
