@@ -7,7 +7,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   
   try {
     const body = await request.json().catch(() => null);
-    const url = `${apiBaseUrl}/api/${pathStr}`;
+    const url = `${apiBaseUrl}/api/${pathStr}/`;
     
     console.log(`[PROXY POST] ${url}`, { body });
     
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { path } = await params;
   const pathStr = path.join('/');
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://inbo-django-api.azurewebsites.net';
-  const url = new URL(`${apiBaseUrl}/api/${pathStr}`);
+  const url = new URL(`${apiBaseUrl}/api/${pathStr}/`);
   
   // Preserve query parameters
   request.nextUrl.searchParams.forEach((value, key) => {
@@ -67,7 +67,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   
   try {
     const body = await request.json().catch(() => null);
-    const response = await fetch(`${apiBaseUrl}/api/${pathStr}`, {
+    const response = await fetch(`${apiBaseUrl}/api/${pathStr}/`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -90,7 +90,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   
   try {
     const body = await request.json().catch(() => null);
-    const response = await fetch(`${apiBaseUrl}/api/${pathStr}`, {
+    const response = await fetch(`${apiBaseUrl}/api/${pathStr}/`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://inbo-django-api.azurewebsites.net';
   
   try {
-    const response = await fetch(`${apiBaseUrl}/api/${pathStr}`, {
+    const response = await fetch(`${apiBaseUrl}/api/${pathStr}/`, {
       method: 'DELETE',
       headers: {
         'Authorization': request.headers.get('Authorization') || '',
