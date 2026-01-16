@@ -9,3 +9,6 @@ dist/
 !api/*.yaml
 !api/*.yml
 
+
+# Local Netlify folder
+.netlify
