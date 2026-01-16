@@ -7,71 +7,11 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.substackcdn.com',
+        hostname: '**',
       },
       {
-        protocol: 'https',
-        hostname: '**.substack.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.medium.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.ghost.io',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.cloudfront.net',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.amazonaws.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.imgur.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.googleusercontent.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.join1440.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.morning-brew.net',
-      },
-      {
-        protocol: 'https',
-        hostname: 'link.morningbrew.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.convertkit-mail.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.beehiiv.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.mailchimp.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.mcsv.net',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.sendgrid.net',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.awstrack.me',
+        protocol: 'http',
+        hostname: '**',
       },
     ],
   },
