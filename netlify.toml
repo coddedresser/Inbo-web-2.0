@@ -7,11 +7,3 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-
-# Ensure all routes are handled by Next.js
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/___netlify-handler"
-  status = 200
-  conditions = {Role = ["admin", "user"]}
-  force = false
