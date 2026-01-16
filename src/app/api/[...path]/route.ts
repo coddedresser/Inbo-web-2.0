@@ -35,6 +35,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://inbo-django-api.azurewebsites.net';
   const url = new URL(`${apiBaseUrl}/api/${pathStr}/`);
   
+  console.log(`[PROXY GET] Original path array:`, path);
+  console.log(`[PROXY GET] Request URL: ${request.url}`);
+  console.log(`[PROXY GET] Constructed backend URL: ${url.toString()}`);
+  
   // Preserve query parameters
   request.nextUrl.searchParams.forEach((value, key) => {
     url.searchParams.append(key, value);
