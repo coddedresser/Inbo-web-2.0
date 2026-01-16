@@ -5,46 +5,28 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://inbo-djang
 const IS_BROWSER = typeof window !== 'undefined';
 const APP_URL = IS_BROWSER ? window.location.origin : '';
 
-// Determine if we should use proxy routes (browser context only)
-const useProxy = IS_BROWSER;
-
-// For auth endpoints, use local proxy; for others use backend directly
-function getBaseURL(endpoint?: string): string {
-  if (!useProxy) return API_BASE_URL;
-  
-  // Auth endpoints go through proxy
-  if (endpoint && (endpoint.includes('/auth/send-otp') || endpoint.includes('/auth/verify-otp') || endpoint.includes('/auth/check-email'))) {
-    return APP_URL;
-  }
-  
-  return API_BASE_URL;
-}
-
-// Create axios instance
+// Create axios instance - ALL requests go through local proxy to bypass CORS
 const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: APP_URL || API_BASE_URL, // Use local proxy if in browser
   timeout: 30000, // 30 seconds - increased for slow backend responses
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor - Add auth token & use proxy for CORS-sensitive endpoints
+// Request interceptor - Add auth token and route through proxy
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = Cookies.get('access_token');
     
-    // Route auth endpoints through proxy to avoid CORS
-    if (useProxy && config.url && (config.url.includes('/auth/send-otp') || config.url.includes('/auth/verify-otp') || config.url.includes('/auth/check-email'))) {
-      config.baseURL = APP_URL;
-      console.debug(`🔀 Using proxy route: ${config.url}`);
+    // All requests now go through /api/... proxy route (same origin)
+    if (IS_BROWSER && config.url && !config.url.startsWith('/api/')) {
+      config.url = `/api${config.url}`;
     }
     
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
       console.debug(`🔒 Auth token added to request: ${config.url?.substring(0, 50)}...`);
-    } else if (config.url && !config.url.includes('/auth/send-otp') && !config.url.includes('/auth/verify-otp') && !config.url.includes('/auth/check-email')) {
-      console.warn(`⚠️ No auth token for: ${config.url}`);
     }
     return config;
   },
