@@ -7,7 +7,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   
   try {
     const body = await request.json().catch(() => null);
-    const response = await fetch(`${apiBaseUrl}/api/${pathStr}`, {
+    const url = `${apiBaseUrl}/api/${pathStr}`;
+    
+    console.log(`[PROXY POST] ${url}`, { body });
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -17,9 +21,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     });
 
     const data = await response.json().catch(() => ({}));
+    console.log(`[PROXY RESPONSE] Status: ${response.status}`, data);
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    return NextResponse.json({ error: 'Proxy error' }, { status: 500 });
+    console.error('[PROXY ERROR]', error);
+    return NextResponse.json({ error: 'Proxy error', details: String(error) }, { status: 500 });
   }
 }
 
@@ -35,6 +41,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   });
 
   try {
+    console.log(`[PROXY GET] ${url.toString()}`);
+    
     const response = await fetch(url.toString(), {
       method: 'GET',
       headers: {
@@ -44,9 +52,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     });
 
     const data = await response.json().catch(() => ({}));
+    console.log(`[PROXY RESPONSE] Status: ${response.status}`, data);
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    return NextResponse.json({ error: 'Proxy error' }, { status: 500 });
+    console.error('[PROXY ERROR]', error);
+    return NextResponse.json({ error: 'Proxy error', details: String(error) }, { status: 500 });
   }
 }
 
