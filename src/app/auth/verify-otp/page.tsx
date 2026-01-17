@@ -176,6 +176,21 @@ function VerifyOTPContent() {
       console.log("🔐 Verifying OTP for:", email, "OTP:", otpString);
       const response = await verifyOTP(email, otpString);
       
+      // Wait for auth state to fully propagate before redirecting
+      // This prevents race condition where dashboard checks auth before state is ready
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
+      // Verify the token was actually saved before redirecting
+      const Cookies = (await import('js-cookie')).default;
+      const tokenSaved = !!Cookies.get('access_token');
+      console.log("🔄 Pre-redirect check - Token saved:", tokenSaved);
+      
+      if (!tokenSaved) {
+        console.warn("⚠️ Token not found after verification, retrying...");
+        // Wait a bit more and check again
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
       // Check if user is new or needs onboarding
       if (response.isNewUser || !response.user.isInboxCreated) {
         router.push("/auth/register?step=onboarding");
