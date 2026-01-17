@@ -1,12 +1,50 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
-import { PUBLISHERS, Publisher } from "./page";
+import { Publisher } from "./page";
 import MobileInboxCard from "@/components/inbox/InboxCard";
 import FilterButton, { FilterValue } from "@/components/FilterButton";
 import Link from "next/link";
+import userService, { Subscription } from "@/services/user";
+
+/* ============================================================
+   HELPER: Convert API subscription to Publisher format
+============================================================ */
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffHours < 1) return "just now";
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? 's' : ''} ago`;
+  return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) > 1 ? 's' : ''} ago`;
+}
+
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function convertSubscriptionToPublisher(sub: Subscription): Publisher {
+  return {
+    id: sub.id,
+    name: sub.name,
+    description: sub.sender_email,
+    logo: `https://ui-avatars.com/api/?name=${encodeURIComponent(sub.name)}&background=random&size=62`,
+    totalItems: sub.email_count,
+    lastReceivedAgo: formatTimeAgo(sub.last_received),
+    active: sub.is_active !== false,
+    firstMail: formatDate(sub.first_received),
+    newsletters: [],
+    senderEmail: sub.sender_email,
+  };
+}
 
 /* ============================================================
    MOBILE MAIN SCREEN (Pixel-Perfect)
@@ -16,9 +54,28 @@ export default function MobileSubscriptionSection() {
   const [selectedPublisher, setSelectedPublisher] =
     useState<Publisher | null>(null);
   const [tab, setTab] = useState<"active" | "inactive">("active");
+  const [publishers, setPublishers] = useState<Publisher[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const active = PUBLISHERS.filter((p) => p.active);
-  const inactive = PUBLISHERS.filter((p) => !p.active);
+  // Fetch subscriptions from API
+  useEffect(() => {
+    const fetchSubscriptions = async () => {
+      try {
+        const subscriptions = await userService.getSubscriptions();
+        const converted = subscriptions.map(convertSubscriptionToPublisher);
+        setPublishers(converted);
+      } catch (error) {
+        console.error("Failed to fetch subscriptions:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubscriptions();
+  }, []);
+
+  const active = publishers.filter((p) => p.active);
+  const inactive = publishers.filter((p) => !p.active);
 
   const publicationCount =
     tab === "active" ? active.length : inactive.length;
@@ -29,6 +86,14 @@ export default function MobileSubscriptionSection() {
         publisher={selectedPublisher}
         onBack={() => setSelectedPublisher(null)}
       />
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F5F6FA] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C46A54]"></div>
+      </div>
     );
   }
 

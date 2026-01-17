@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, List, LayoutGrid } from "lucide-react";
@@ -8,6 +8,7 @@ import NewsletterCard from "@/components/inbox/InboxCard";
 import TabSwitcher, { TabType } from "@/components/inbox/TabSwitcher";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import MobileSubscriptionSection from "./MobileSubscriptionSection";
+import userService, { Subscription } from "@/services/user";
 
 /* --------------------------------------------
    TYPES
@@ -51,152 +52,46 @@ export type Publisher = {
   firstMail: string;
 
   newsletters: Newsletter[];
+  
+  senderEmail?: string;       // From API
 };
 
-
 /* --------------------------------------------
-   DUMMY DATA
+   HELPER: Convert API subscription to Publisher format
 --------------------------------------------- */
-export const PUBLISHERS: Publisher[] = [
-  {
-  id: "ilt",
-  name: "I Love Typography",
-  description: "Design & typography insights",
-  logo: "/logos/ilt.png",
-  active: true,
-  totalItems: 10,
-  lastReceivedAgo: "11 hours ago",
-  firstMail: "May 23, 2025",
-
-    newsletters: [
-      {
-        id: "ilt-1",
-        slug: "ilt-1",
-
-        title: "Personalised UX Doesn’t Work",
-        description:
-          "Why most personalized UX fails and how Nike’s simple tricks deliver engagement.",
-
-        // Convert to required props
-        date: "Oct 3rd",
-        time: "2 mins",
-        tag: "Design",
-
-        badgeText: "ILT",
-        badgeColor: "#F04F3A",
-        badgeTextColor: "#FFFFFF",
-
-        author: "I Love Typography",
-
-        thumbnail: "/placeholder.png",
-
-        read: false,
-      },
-      {
-        id: "ilt-2",
-        slug: "ilt-2",
-
-        title: "Typography in the Age of AI",
-        description: "How AI is reshaping modern type systems.",
-
-        date: "Sep 28th",
-        time: "3 mins",
-        tag: "Design",
-
-        badgeText: "ILT",
-        badgeColor: "#F04F3A",
-        badgeTextColor: "#FFFFFF",
-
-        author: "I Love Typography",
-
-        thumbnail: "/placeholder.png",
-
-        read: true,
-      },
-    ],
-
-  },
-  {
-    id: "ilt-8",
-    name: "I Love Typography",
-    description: "Design & typography insights",
-    logo: "/logos/ilt.png",
-    active: true,
-    totalItems: 10,
-    lastReceivedAgo: "11 hours ago",
-    firstMail: "May 23, 2025",
-    newsletters: []
-  },
-  {
-    id: "ilt-9",
-    name: "I Love Typography",
-    description: "Design & typography insights",
-    logo: "/logos/ilt.png",
-    active: true,
-    totalItems: 10,
-    lastReceivedAgo: "11 hours ago",
-    firstMail: "May 23, 2025",
-    newsletters: []
-  },
-  {
-    id: "ilt-82",
-    name: "I Love Typography",
-    description: "Design & typography insights",
-    logo: "/logos/ilt.png",
-    active: true,
-    totalItems: 10,
-    lastReceivedAgo: "11 hours ago",
-    firstMail: "May 23, 2025",
-    newsletters: []
-  },
-  {
-    id: "ilt-81",
-    name: "I Love Typography",
-    description: "Design & typography insights",
-    logo: "/logos/ilt.png",
-    active: true,
-    totalItems: 10,
-    lastReceivedAgo: "11 hours ago",
-    firstMail: "May 23, 2025",
-    newsletters: []
-  },
-  {
-    id: "ilt-821",
-    name: "I Love Typography",
-    description: "Design & typography insights",
-    logo: "/logos/ilt.png",
-    active: true,
-    totalItems: 10,
-    lastReceivedAgo: "11 hours ago",
-    firstMail: "May 23, 2025",
-    newsletters: []
-  },
-  {
-    id: "ilt-822",
-    name: "I Love Typography",
-    description: "Design & typography insights",
-    logo: "/logos/ilt.png",
-    active: true,
-    totalItems: 10,
-    lastReceivedAgo: "11 hours ago",
-    firstMail: "May 23, 2025",
-    newsletters: []
-  },
-
-  {
-  id: "ilt-4",
-  name: "I Love Typography",
-  description: "Design & typography insights",
-  logo: "/logos/ilt.png",
-  active: true,
-  totalItems: 10,
-  lastReceivedAgo: "11 hours ago",
-  firstMail: "May 23, 2025",
-  newsletters: []
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffHours < 1) return "just now";
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? 's' : ''} ago`;
+  return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) > 1 ? 's' : ''} ago`;
 }
-,
-];
 
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function convertSubscriptionToPublisher(sub: Subscription): Publisher {
+  return {
+    id: sub.id,
+    name: sub.name,
+    description: sub.sender_email,
+    logo: `https://ui-avatars.com/api/?name=${encodeURIComponent(sub.name)}&background=random&size=62`,
+    totalItems: sub.email_count,
+    lastReceivedAgo: formatTimeAgo(sub.last_received),
+    active: sub.is_active !== false, // Default to active if not specified
+    firstMail: formatDate(sub.first_received),
+    newsletters: [], // Will be populated when viewing detail
+    senderEmail: sub.sender_email,
+  };
+}
 
 
 /* --------------------------------------------
@@ -208,11 +103,30 @@ export default function SubscriptionsPage() {
   const [inactiveView, setInactiveView] = useState<"list" | "grid">("list");
   const [activeVisible, setActiveVisible] = useState(6);
   const [inactiveVisible, setInactiveVisible] = useState(6);
+  const [publishers, setPublishers] = useState<Publisher[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [selectedPublisher, setSelectedPublisher] =
     useState<Publisher | null>(null);
   
   const isMobile = useMediaQuery("(max-width: 768px)");
+
+  // Fetch subscriptions from API
+  useEffect(() => {
+    const fetchSubscriptions = async () => {
+      try {
+        const subscriptions = await userService.getSubscriptions();
+        const converted = subscriptions.map(convertSubscriptionToPublisher);
+        setPublishers(converted);
+      } catch (error) {
+        console.error("Failed to fetch subscriptions:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubscriptions();
+  }, []);
 
   if (isMobile) {
     return <MobileSubscriptionSection/>
@@ -229,8 +143,13 @@ export default function SubscriptionsPage() {
 
       {/* ================= MAIN ================= */}
       <main className="flex-1 p-6">
-        {!selectedPublisher ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#C46A54]"></div>
+          </div>
+        ) : !selectedPublisher ? (
           <PublisherList
+            publishers={publishers}
             activeView={activeView}
             setActiveView={setActiveView}
             inactiveView={inactiveView}
@@ -259,6 +178,7 @@ export default function SubscriptionsPage() {
    PAGE 1 – PUBLISHER LIST
 --------------------------------------------- */
 function PublisherList({
+  publishers,
   activeView,
   setActiveView,
   inactiveView,
@@ -269,6 +189,7 @@ function PublisherList({
   setInactiveVisible,
   onSelect,
 }: {
+  publishers: Publisher[];
   activeView: "list" | "grid";
   setActiveView: (v: "list" | "grid") => void;
   inactiveView: "list" | "grid";
@@ -280,8 +201,8 @@ function PublisherList({
   onSelect: (p: Publisher) => void;
   })
 {
-  const active = PUBLISHERS.filter((p) => p.active);
-  const inactive = PUBLISHERS.filter((p) => !p.active);
+  const active = publishers.filter((p) => p.active);
+  const inactive = publishers.filter((p) => !p.active);
   const visibleActive = active.slice(0, activeVisible);
   const visibleInactive = inactive.slice(0, inactiveVisible);
 

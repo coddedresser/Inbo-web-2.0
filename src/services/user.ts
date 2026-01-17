@@ -9,6 +9,8 @@ const USER_ENDPOINTS = {
   GLOBAL_STATS: '/api/user/global-stats/',
   ONBOARDING: '/api/user/onboarding/',
   ONBOARDING_STATUS: '/api/user/onboarding/status/',
+  SUBSCRIPTIONS: '/api/user/subscriptions/',
+  FOLDERS: '/api/user/folders/',
 } as const;
 
 const DIRECTORY_ENDPOINTS = {
@@ -106,6 +108,26 @@ export interface ProfileUpdateRequest {
   name?: string;
   birthYear?: string;
   gender?: string;
+}
+
+// Subscription types (from /api/user/subscriptions/)
+export interface Subscription {
+  id: string;
+  name: string;
+  sender_email: string;
+  email_count: number;
+  first_received: string;
+  last_received: string;
+  is_active?: boolean;
+}
+
+// Folder types (from /api/user/folders/)
+export interface Folder {
+  id: string;
+  name: string;
+  email_count: number;
+  created_at: string;
+  updated_at: string;
 }
 
 class UserService {
@@ -249,6 +271,32 @@ class UserService {
       return response.data;
     } catch (error: any) {
       logApiError('PROFILE_UPDATE', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user's newsletter subscriptions
+   */
+  async getSubscriptions(): Promise<Subscription[]> {
+    try {
+      const response = await apiClient.get<Subscription[]>(USER_ENDPOINTS.SUBSCRIPTIONS);
+      return response.data;
+    } catch (error: any) {
+      logApiError('SUBSCRIPTIONS', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user's folders/collections
+   */
+  async getFolders(): Promise<Folder[]> {
+    try {
+      const response = await apiClient.get<Folder[]>(USER_ENDPOINTS.FOLDERS);
+      return response.data;
+    } catch (error: any) {
+      logApiError('FOLDERS', error);
       throw error;
     }
   }
