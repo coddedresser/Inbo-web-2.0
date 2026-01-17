@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import EmptyList from "@/components/inbox/EmptyList";
 import EmptyInbox from "@/components/inbox/EmptyInbox";
 import NewsletterCard from "@/components/inbox/InboxCard";
@@ -97,6 +98,7 @@ async function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = RE
 /* ---------------------------------------------------------------- */
 
 export default function InboxPage() {
+  const { t } = useTranslation("common");
   const [tab, setTab] = useState<"unread" | "read" | "all">("unread");
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -557,7 +559,7 @@ export default function InboxPage() {
               <div className="w-full h-[78px] bg-white border border-[#E5E7E8] flex items-center justify-between px-5 shadow-sm">
                 <div className="flex items-center gap-3">
                   <h2 className="text-[26px] font-bold text-[#0C1014]">
-                    Your Reads
+                    {t("inbox.title")}
                   </h2>
                   <RefreshButton onClick={refreshInbox} />
                 </div>
@@ -583,7 +585,7 @@ export default function InboxPage() {
               {!isTodayEmpty && (
                 <section>
                   <h3 className="text-[18px] font-semibold text-[#6F7680] mb-4">
-                    Today
+                    {t("time.today")}
                   </h3>
                   {filteredToday.slice(0, visibleToday).map((item) => (
                     <div key={item.emailId} className="mb-2">
@@ -601,7 +603,7 @@ export default function InboxPage() {
               {!is7DaysEmpty && (
                 <section>
                   <h3 className="text-[18px] font-semibold text-[#6F7680] mb-4">
-                    Last 7 days
+                    {t("time.last7Days", "Last 7 days")}
                   </h3>
                   {filtered7Days.slice(0, visible7Days).map((item) => (
                     <div key={item.emailId} className="mb-2">
@@ -619,7 +621,7 @@ export default function InboxPage() {
               {!is30DaysEmpty && (
                 <section>
                   <h3 className="text-[18px] font-semibold text-[#6F7680] mb-4">
-                    Last 30 days
+                    {t("time.last30Days", "Last 30 days")}
                   </h3>
                   {filtered30Days.slice(0, visible30Days).map((item) => (
                     <div key={item.emailId} className="mb-2">
@@ -637,7 +639,7 @@ export default function InboxPage() {
               {!isOlderEmpty && (
                 <section>
                   <h3 className="text-[18px] font-semibold text-[#6F7680] mb-4">
-                    Older
+                    {t("time.older", "Older")}
                   </h3>
                   {filteredOlder.slice(0, visibleOlder).map((item) => (
                     <div key={item.emailId} className="mb-2">
@@ -659,7 +661,7 @@ export default function InboxPage() {
                     disabled={loadingMore}
                     className="px-8 py-3 border border-gray-300 rounded-full text-black font-medium hover:bg-gray-50 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loadingMore ? "Loading..." : "View more"}
+                    {loadingMore ? t("common.loading") : t("common.viewMore")}
                   </button>
                 </div>
               )}

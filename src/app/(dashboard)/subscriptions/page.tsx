@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, List, LayoutGrid } from "lucide-react";
 import NewsletterCard from "@/components/inbox/InboxCard";
 import TabSwitcher, { TabType } from "@/components/inbox/TabSwitcher";
@@ -202,6 +203,7 @@ export const PUBLISHERS: Publisher[] = [
    PAGE
 --------------------------------------------- */
 export default function SubscriptionsPage() {
+  const { t } = useTranslation("common");
   const [activeView, setActiveView] = useState<"list" | "grid">("list");
   const [inactiveView, setInactiveView] = useState<"list" | "grid">("list");
   const [activeVisible, setActiveVisible] = useState(6);
@@ -221,7 +223,7 @@ export default function SubscriptionsPage() {
       {/* ================= HEADER (ALWAYS) ================= */}
       <header className="h-[78px] bg-white border-b border-[#E5E7EB] flex items-center px-6">
         <h1 className="text-[26px] font-bold text-[#0C1014]">
-          Your Subscription
+          {t("subscriptions.title")}
         </h1>
       </header>
 

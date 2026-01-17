@@ -8,11 +8,12 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import SubscribeButton from "../SubscribeButton";
 
 export interface Publication {
+  id: string;
   rank: number;
   logo: string;
   name: string;
   desc: string;
-   description: string;
+  description: string;
   frequency: string;
 }
 
@@ -106,12 +107,12 @@ export default function PublicationModal({
 
           {/* DESCRIPTION */}
           <p className="text-[16px] text-[#6F7680] leading-5 mb-6">
-            {publication.desc}
+            {publication.desc || publication.description}
           </p>
 
           {/* SUBSCRIBE + BOOKMARK */}
           <div className="flex items-center justify-between gap-3 w-full mb-6">
-            <SubscribeButton/>
+            <SubscribeButton newsletterId={publication.id} />
 
             <button
               onClick={handlecollectionClick}

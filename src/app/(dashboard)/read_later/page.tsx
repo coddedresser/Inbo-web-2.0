@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, ListFilter } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -53,6 +54,7 @@ const LOAD_MORE = 5;
 /* ----------------------------------------------------- */
 
 export default function ReadLaterPage() {
+  const { t } = useTranslation("common");
   const isMobile = useMediaQuery("(max-width: 768px)");
   const router = useRouter();
 
@@ -122,7 +124,7 @@ export default function ReadLaterPage() {
           </button>
 
           <h1 className="flex-1 text-center text-[20px] font-semibold">
-            Read Later
+            {t("readLater.title")}
           </h1>
 
           <div className="w-5 h-5" />
@@ -142,7 +144,7 @@ export default function ReadLaterPage() {
                   <span className="text-black">
                     {sortedItems.length}
                   </span>{" "}
-                  Read Later
+                  {t("readLater.title")}
                 </span>
 
                 <div className="flex gap-2">
@@ -228,7 +230,7 @@ export default function ReadLaterPage() {
       {/* HEADER */}
       <div className="w-full h-[78px] bg-white border border-[#E5E7E8] flex items-center justify-between px-5 shadow-sm">
         <h2 className="text-[26px] font-bold text-[#0C1014]">
-          Read Later
+          {t("readLater.title")}
         </h2>
 
         <div className="flex gap-3">
@@ -262,12 +264,13 @@ export default function ReadLaterPage() {
 /* ---------------- VIEW MORE BUTTON ---------------- */
 
 function CenterButton({ onClick }: { onClick: () => void }) {
+  const { t } = useTranslation("common");
   return (
     <button
       onClick={onClick}
       className="mx-auto mt-4 px-6 py-2 border border-gray-300 rounded-full text-black font-medium hover:bg-gray-50 transition"
     >
-      View more
+      {t("common.viewMore")}
     </button>
   );
 }

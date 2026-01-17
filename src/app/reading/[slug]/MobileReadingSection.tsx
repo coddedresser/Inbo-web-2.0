@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import MobileFloatingNavbar from "@/components/reading/MobileFloatingNavbar";
 import MobileReadingMenu from "@/components/reading/MobileReadingMenu";
 import MobileReadingHeader from "@/components/reading/MobileReadingHeader";
@@ -54,6 +55,7 @@ export default function MobileReadingSection({
   setFontFamily,
 }: MobileReadingSectionProps) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation("common");
 
   const [atTop, setAtTop] = useState(true);
   const [showMenu, setShowMenu] = useState(false);

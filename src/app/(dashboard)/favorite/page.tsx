@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 import NewsletterCard from "@/components/inbox/InboxCard";
 import FilterButton, {
@@ -52,6 +53,7 @@ const LOAD_MORE = 5;
 /* ----------------------------------------------------- */
 
 export default function FavouritePage() {
+  const { t } = useTranslation("common");
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const [items, setItems] = useState<any[]>([]);
@@ -103,7 +105,7 @@ export default function FavouritePage() {
       {/* HEADER */}
       <div className="w-full h-[78px] bg-white border border-[#E5E7E8] flex items-center justify-between px-5 shadow-sm">
         <h2 className="text-[26px] font-bold text-[#0C1014]">
-          Favorite
+          {t("favorites.title")}
         </h2>
 
         {/* FILTER BUTTON */}
@@ -129,7 +131,7 @@ export default function FavouritePage() {
                 onClick={loadMore}
                 className="mx-auto mt-4 px-6 py-2 border border-gray-300 rounded-full font-medium hover:bg-gray-200 transition"
               >
-                View more
+                {t("common.viewMore")}
               </button>
             )}
           </div>

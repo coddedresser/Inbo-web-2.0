@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
 import { PUBLISHERS, Publisher } from "./page";
 import MobileInboxCard from "@/components/inbox/InboxCard";
@@ -11,6 +12,7 @@ import Link from "next/link";
    MOBILE MAIN SCREEN (Pixel-Perfect)
 ============================================================ */
 export default function MobileSubscriptionSection() {
+  const { t } = useTranslation("common");
   const [selectedPublisher, setSelectedPublisher] =
     useState<Publisher | null>(null);
   const [tab, setTab] = useState<"active" | "inactive">("active");
@@ -38,7 +40,7 @@ export default function MobileSubscriptionSection() {
           <ArrowLeft size={22} className="mr-3" />
         </Link>
         <p className="text-[18px] font-semibold flex-1 text-center mr-6">
-          Subscription
+          {t("nav.subscriptions")}
         </p>
       </div>
 
@@ -46,7 +48,7 @@ export default function MobileSubscriptionSection() {
         {/* COUNT + SEGMENTED CONTROL */}
         <div className="flex justify-between items-center px-4 mt-5">
           <p className="text-[16px] font-medium">
-            {publicationCount} Publication
+            {publicationCount} {t("mobile.publication")}
           </p>
 
           <div className="flex rounded-full bg-white border border-[#D8DDE3] p-1">
@@ -58,7 +60,7 @@ export default function MobileSubscriptionSection() {
                   : "text-[#6F7680]"
               }`}
             >
-              Active
+              {t("mobile.active")}
             </button>
 
             <button
@@ -69,7 +71,7 @@ export default function MobileSubscriptionSection() {
                   : "text-[#6F7680]"
               }`}
             >
-              Inactive
+              {t("mobile.inactive")}
             </button>
           </div>
         </div>
@@ -116,6 +118,7 @@ function MobilePublisherDetail({
   publisher: Publisher;
   onBack: () => void;
 }) {
+  const { t } = useTranslation("common");
   const [state, setState] = useState(publisher);
   const [filter, setFilter] = useState<FilterValue>("all");
 
@@ -163,7 +166,7 @@ function MobilePublisherDetail({
             </p>
 
             <p className="text-[14px]">
-              <span className="font-medium">First mail: </span>
+              <span className="font-medium">{t("mobile.firstMail")}: </span>
               <span className="text-[#6F7680]">
                 {state.firstMail}
               </span>
@@ -172,7 +175,7 @@ function MobilePublisherDetail({
 
           <div className="flex justify-between items-center mt-6">
             <button className="text-[17px] text-gray-500 font-semibold">
-              Unsubscribe
+              {t("mobile.unsubscribe")}
             </button>
 
             <div className="flex items-center gap-3">
@@ -183,7 +186,7 @@ function MobilePublisherDetail({
                     : "text-[#A2AAB4]"
                 }`}
               >
-                {state.active ? "Active" : "Inactive"}
+                {state.active ? t("mobile.active") : t("mobile.inactive")}
               </span>
 
               <button
@@ -214,20 +217,20 @@ function MobilePublisherDetail({
         {/* ENGAGEMENT */}
         <div className="bg-[#F3F4F6] mx-4 mb-4 rounded-2xl p-5">
           <p className="text-[18px] font-semibold mb-4">
-            Your Engagement
+            {t("mobile.yourEngagement")}
           </p>
 
           <div className="flex justify-between mb-4">
             <div>
               <p className="text-[14px] text-[#A2AAB4]">
-                Total newsletter received
+                {t("mobile.totalNewsletterReceived")}
               </p>
               <p className="text-[24px] font-bold">{total}</p>
             </div>
 
             <div>
               <p className="text-[14px] text-[#A2AAB4]">
-                Read percentage
+                {t("mobile.readPercentage")}
               </p>
               <p className="text-[24px] font-bold">
                 {readPercentage}%
@@ -251,7 +254,7 @@ function MobilePublisherDetail({
         <div className="px-4 pb-6">
           <div className="flex justify-between items-center">
             <p className="text-[16px] font-semibold">
-              Recent Issues
+              {t("mobile.recentIssues")}
             </p>
             <FilterButton value={filter} onChange={setFilter} />
           </div>

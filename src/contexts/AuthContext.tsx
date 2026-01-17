@@ -19,6 +19,7 @@ interface User {
   birthYear?: string | null;
   gender?: string | null;
   createdAt?: string;
+  picture?: string | null;
 }
 
 interface AuthState {
@@ -73,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           birthYear: userProfile.birthYear,
           gender: userProfile.gender,
           createdAt: userProfile.createdAt,
+          picture: userProfile.picture,
         };
         
         // Cache user data in localStorage for offline/slow connection resilience

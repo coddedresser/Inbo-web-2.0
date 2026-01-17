@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import MobileHeader from "@/components/layout/MobileHeader";
 import NewsletterCard from "@/components/inbox/InboxCard";
 import {
@@ -48,6 +49,7 @@ export default function MobileInboxSection({
 
   const [filterOpen, setFilterOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const { t } = useTranslation("common");
 
   const handleShowMore = (
     visible: number,
@@ -66,7 +68,7 @@ export default function MobileInboxSection({
   return (
     <div className="w-full md:hidden flex flex-col bg-[#F5F6FA] min-h-screen">
       {/* MOBILE HEADER */}
-      <MobileHeader title="Your Reads" onMenuClick={() => { }} />
+      <MobileHeader title={t("mobile.yourReads")} onMenuClick={() => { }} />
 
       {/* MAIN CONTENT */}
       <div
@@ -94,7 +96,7 @@ export default function MobileInboxSection({
         {/* TODAY */}
         {filteredToday.length > 0 && (
           <section className="mb-4">
-            <h3 className="text-[14px] font-bold text-gray-400 px-5 mb-3 uppercase tracking-wider">Today</h3>
+            <h3 className="text-[14px] font-bold text-gray-400 px-5 mb-3 uppercase tracking-wider">{t("time.today")}</h3>
             {filteredToday.slice(0, visibleToday).map((item, i) => (
               <NewsletterCard key={item.slug || i} {...item} />
             ))}
@@ -103,7 +105,7 @@ export default function MobileInboxSection({
                 onClick={() => handleShowMore(visibleToday, filteredToday.length, setVisibleToday)}
                 className="w-full py-4 text-[#D95A33] font-semibold text-sm flex items-center justify-center gap-1 border-t border-gray-50 bg-white"
               >
-                {visibleToday < filteredToday.length ? "Show more" : "Load older"} <ChevronDown size={16} />
+                {visibleToday < filteredToday.length ? t("mobile.showMore") : t("mobile.loadOlder")} <ChevronDown size={16} />
               </button>
             )}
           </section>
@@ -112,7 +114,7 @@ export default function MobileInboxSection({
         {/* LAST 7 DAYS */}
         {filtered7Days.length > 0 && (
           <section className="mb-4">
-            <h3 className="text-[14px] font-bold text-gray-400 px-5 mb-3 uppercase tracking-wider">Last 7 Days</h3>
+            <h3 className="text-[14px] font-bold text-gray-400 px-5 mb-3 uppercase tracking-wider">{t("time.last7Days")}</h3>
             {filtered7Days.slice(0, visible7Days).map((item, i) => (
               <NewsletterCard key={item.slug || i} {...item} />
             ))}
@@ -121,7 +123,7 @@ export default function MobileInboxSection({
                 onClick={() => handleShowMore(visible7Days, filtered7Days.length, setVisible7Days)}
                 className="w-full py-4 text-[#D95A33] font-semibold text-sm flex items-center justify-center gap-1 border-t border-gray-50 bg-white"
               >
-                {visible7Days < filtered7Days.length ? "Show more" : "Load older"} <ChevronDown size={16} />
+                {visible7Days < filtered7Days.length ? t("mobile.showMore") : t("mobile.loadOlder")} <ChevronDown size={16} />
               </button>
             )}
           </section>
@@ -130,7 +132,7 @@ export default function MobileInboxSection({
         {/* LAST 30 DAYS */}
         {filtered30Days.length > 0 && (
           <section className="mb-4">
-            <h3 className="text-[14px] font-bold text-gray-400 px-5 mb-3 uppercase tracking-wider">Last 30 Days</h3>
+            <h3 className="text-[14px] font-bold text-gray-400 px-5 mb-3 uppercase tracking-wider">{t("time.last30Days")}</h3>
             {filtered30Days.slice(0, visible30Days).map((item, i) => (
               <NewsletterCard key={item.slug || i} {...item} />
             ))}
@@ -139,7 +141,7 @@ export default function MobileInboxSection({
                 onClick={() => handleShowMore(visible30Days, filtered30Days.length, setVisible30Days)}
                 className="w-full py-4 text-[#D95A33] font-semibold text-sm flex items-center justify-center gap-1 border-t border-gray-50 bg-white"
               >
-                {visible30Days < filtered30Days.length ? "Show more" : "Load older"} <ChevronDown size={16} />
+                {visible30Days < filtered30Days.length ? t("mobile.showMore") : t("mobile.loadOlder")} <ChevronDown size={16} />
               </button>
             )}
           </section>
@@ -148,7 +150,7 @@ export default function MobileInboxSection({
         {/* OLDER */}
         {filteredOlder.length > 0 && (
           <section className="mb-4">
-            <h3 className="text-[14px] font-bold text-gray-400 px-5 mb-3 uppercase tracking-wider">Older</h3>
+            <h3 className="text-[14px] font-bold text-gray-400 px-5 mb-3 uppercase tracking-wider">{t("time.older")}</h3>
             {filteredOlder.slice(0, visibleOlder).map((item, i) => (
               <NewsletterCard key={item.slug || i} {...item} />
             ))}
@@ -157,7 +159,7 @@ export default function MobileInboxSection({
                 onClick={() => handleShowMore(visibleOlder, filteredOlder.length, setVisibleOlder)}
                 className="w-full py-4 text-[#D95A33] font-semibold text-sm flex items-center justify-center gap-1 border-t border-gray-50 bg-white"
               >
-                {visibleOlder < filteredOlder.length ? "Show more" : "Load more"} <ChevronDown size={16} />
+                {visibleOlder < filteredOlder.length ? t("mobile.showMore") : t("mobile.loadMore")} <ChevronDown size={16} />
               </button>
             )}
           </section>
@@ -188,7 +190,7 @@ export default function MobileInboxSection({
           <div className="absolute bottom-0 w-full rounded-t-[32px] bg-white p-8 animate-in slide-in-from-bottom duration-300 shadow-2xl">
             <div className="mx-auto mb-6 h-1.5 w-12 rounded-full bg-gray-200" />
 
-            <h4 className="text-lg font-bold mb-4 px-1">Filter your reads</h4>
+            <h4 className="text-lg font-bold mb-4 px-1">{t("mobile.filterYourReads")}</h4>
 
             {(Object.keys(FILTER_LABELS) as FilterValue[]).map(key => (
               <button

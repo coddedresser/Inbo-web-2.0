@@ -48,6 +48,7 @@ export interface UserProfileResponse {
   isInboxCreated: boolean;
   inboxEmail: string | null;
   createdAt: string;
+  picture?: string | null;
 }
 
 export interface CheckEmailResponse {

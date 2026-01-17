@@ -1,9 +1,10 @@
 "use client";
 
-import React, { use, useState, useRef, useEffect } from "react";
+import React, { use, useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useTranslation } from "react-i18next";
 import { SEOHead } from "@/components/seo/SEOHead";
 import {
   Bookmark,
@@ -377,6 +378,8 @@ export default function ReadingPage(props: PageProps) {
 
   // HIGHLIGHT STATE
   const [isHighlightMode, setIsHighlightMode] = useState(false);
+
+  const { t } = useTranslation("common");
 
   // SCROLL STATE
   const [atTop, setAtTop] = useState(true);
@@ -756,9 +759,7 @@ export default function ReadingPage(props: PageProps) {
       <div className={`relative z-10 h-screen w-full flex hide-scrollbar ${appearanceClass} transition-colors duration-300`}>
         <div className={`flex flex-col w-full ${appearanceClass}`}>
           {/* HEADER */}
-          <header className={`h-[64px] flex items-center justify-between px-6 border-b transition-all ${isReadingMode ? 'opacity-0 h-0 overflow-hidden' : `opacity-100 ${appearanceClass}`}`}>
-            <div className="flex items-center gap-4"></div>
-
+          <header className={`h-[64px] flex items-center justify-end px-6 border-b transition-all ${isReadingMode ? 'opacity-0 h-0 overflow-hidden' : `opacity-100 ${appearanceClass}`}`}>
             <div className="flex items-center gap-2">
               <IconButton
                 buttonRef={typeBtnRef}
@@ -893,7 +894,7 @@ export default function ReadingPage(props: PageProps) {
                   </div>
                 )}
 
-                {/* CONDITIONAL RENDERING */}
+                {/* CONDITIONAL RENDERING - Reader mode shows parsed content, default shows HTML */}
                 {isReadingMode ? (
                   <article className="max-w-none" style={{ fontSize: `${fontSize}px`, lineHeight: 1.7 }}>
                     {content.map((p, i) => (
