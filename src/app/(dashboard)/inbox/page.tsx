@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import EmptyList from "@/components/inbox/EmptyList";
 import EmptyInbox from "@/components/inbox/EmptyInbox";
@@ -19,9 +19,6 @@ import FlameBadge from "@/components/FlameBadge";
 import ThemeToggle from "@/components/ThemeToggle";
 
 /* --------------------- EMAIL TRANSFORMATION --------------------- */
-/**
- * Transform API EmailListItem to component-compatible format
- */
 function transformEmailToCard(email: EmailListItem) {
   const dateReceived = email.dateReceived ? new Date(email.dateReceived) : new Date();
   const now = new Date();
@@ -30,7 +27,6 @@ function transformEmailToCard(email: EmailListItem) {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffMinutes = Math.floor(diffMs / (1000 * 60));
 
-  // Calculate human-readable time (matching Figma: "2 mins")
   let timeDisplay = "Just now";
   if (diffDays > 0) {
     timeDisplay = `${diffDays}d ago`;
@@ -40,14 +36,10 @@ function transformEmailToCard(email: EmailListItem) {
     timeDisplay = `${diffMinutes} min${diffMinutes > 1 ? 's' : ''}`;
   }
 
-  // Extract newsletter name (use provided or extract from sender)
   const newsletterName = email.newsletterName || extractNewsletterName(email.sender);
-
-  // Extract first image from content - only use placeholder if no image found
   const extractedImage = email.firstImage || extractFirstImage(email.contentPreview || null);
-  const thumbnail = extractedImage || null; // Don't use placeholder, show no image if none found
+  const thumbnail = extractedImage || null;
 
-  // Format date like "Oct 3rd" (matching Figma)
   const day = dateReceived.getDate();
   const month = dateReceived.toLocaleDateString("en-US", { month: "short" });
   const daySuffix = day === 1 || day === 21 || day === 31 ? 'st' :
@@ -59,7 +51,7 @@ function transformEmailToCard(email: EmailListItem) {
     badgeText: newsletterName,
     badgeColor: "#E0F2FE",
     badgeTextColor: "#0369A1",
-    author: newsletterName, // Use newsletter name instead of sender email
+    author: newsletterName,
     title: email.subject || "No Subject",
     description: email.contentPreview || "No preview available",
     date: dateStr,
@@ -75,19 +67,20 @@ function transformEmailToCard(email: EmailListItem) {
     newsletterName: newsletterName,
     newsletterLogo: email.newsletterLogo,
     sender: email.sender,
-    dateReceived: email.dateReceived, // Keep for sorting
+    dateReceived: email.dateReceived,
   };
 }
 
-/* --------------------- PAGINATION CONSTANTS --------------------- */
-const EMAILS_PER_API_PAGE = 20; // Backend returns 20 emails per page
-const PAGES_TO_LOAD_INITIAL = 1; // Load 1 page initially for fast first paint
-const PAGES_TO_LOAD_MORE = 2; // Load 2 pages when loading more
-const INITIAL_VISIBLE = 50; // Show 50 emails initially per section
-const LOAD_MORE = 50; // Load 50 more when "view more" is clicked
-const REQUEST_TIMEOUT_MS = 45000; // 45s timeout (reduced from 60s)
+/* --------------------- CONSTANTS --------------------- */
+const EMAILS_PER_PAGE = 20;
+const INITIAL_PAGES_TO_FETCH = 10; // Fetch 10 pages (200 emails) initially for good coverage
+const BACKGROUND_BATCH_SIZE = 5; // Fetch 5 pages per background batch (100 emails)
+const BACKGROUND_FETCH_DELAY = 200; // 200ms delay between background batches (faster)
+const INITIAL_VISIBLE_PER_SECTION = 10; // Show 10 emails initially per section
+const LOAD_MORE_COUNT = 20; // Show 20 more when clicking view more
+const REQUEST_TIMEOUT_MS = 60000; // 60 second timeout
+const MAX_PAGES = 1000; // Max 1000 pages (20,000 emails)
 
-// Small helper to wrap API calls with a timeout so UI can respond
 async function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
   return await Promise.race([
     promise,
@@ -100,356 +93,434 @@ async function withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = RE
 export default function InboxPage() {
   const { t } = useTranslation("common");
   const [tab, setTab] = useState<"unread" | "read" | "all">("unread");
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Email groups by time period
-  const [todayEmails, setTodayEmails] = useState<any[]>([]);
-  const [last7DaysEmails, setLast7DaysEmails] = useState<any[]>([]);
-  const [last30DaysEmails, setLast30DaysEmails] = useState<any[]>([]);
-  const [olderEmails, setOlderEmails] = useState<any[]>([]);
+  // All fetched emails (single source of truth)
+  const [allEmails, setAllEmails] = useState<any[]>([]);
 
-  // Pagination state
-  const [nextPageToFetch, setNextPageToFetch] = useState(1); // Track next API page to fetch
+  // Pagination tracking
+  const [nextPageToFetch, setNextPageToFetch] = useState(1);
   const [hasMorePages, setHasMorePages] = useState(true);
   const [realUnreadCount, setRealUnreadCount] = useState(0);
+  const [realReadCount, setRealReadCount] = useState(0); // Real read count from analytics
+  const [totalEmailsFromAPI, setTotalEmailsFromAPI] = useState(0); // Real total from analytics
+  
+  // Background fetch control
+  const backgroundFetchRef = useRef<boolean>(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const currentTabRef = useRef<string>(tab); // Track current tab to detect real tab changes
+  const isMountedRef = useRef<boolean>(true); // Track if component is mounted
 
-  // Reset pagination when tab changes
-  useEffect(() => {
-    console.log(`📑 Tab changed to: ${tab}`);
-    setTodayEmails([]);
-    setLast7DaysEmails([]);
-    setLast30DaysEmails([]);
-    setOlderEmails([]);
-    setNextPageToFetch(1);
-    setHasMorePages(true);
-  }, [tab]);
+  // UI visibility controls (how many to show in each section)
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_PER_SECTION * 4); // Total visible across all sections
 
-  // Group emails by time periods
-  const groupEmailsByTime = (emails: EmailListItem[]) => {
+  /**
+   * Merge emails with deduplication by ID
+   */
+  const mergeEmails = useCallback((existing: any[], newEmails: any[]): any[] => {
+    const emailMap = new Map<string, any>();
+    existing.forEach(email => emailMap.set(email.emailId, email));
+    newEmails.forEach(email => emailMap.set(email.emailId, email));
+    return Array.from(emailMap.values());
+  }, []);
+
+  /**
+   * Fetch a single page of emails
+   */
+  const fetchPage = useCallback(async (page: number, isReadParam: boolean | undefined): Promise<EmailListItem[]> => {
+    try {
+      const response = await emailService.getInboxEmails("latest", isReadParam, page);
+      
+      if (!Array.isArray(response) || response.length === 0) return [];
+      
+      // Check if it's an empty inbox response
+      const firstItem = response[0] as any;
+      if ('pendingNewsletters' in firstItem) return [];
+      
+      return response as EmailListItem[];
+    } catch (err) {
+      console.error(`Failed to fetch page ${page}:`, err);
+      return [];
+    }
+  }, []);
+
+  /**
+   * Fetch multiple pages in parallel
+   */
+  const fetchPages = useCallback(async (startPage: number, count: number, isReadParam: boolean | undefined): Promise<{emails: EmailListItem[], lastPage: number, hasMore: boolean}> => {
+    const pagePromises = [];
+    for (let i = 0; i < count; i++) {
+      pagePromises.push(fetchPage(startPage + i, isReadParam));
+    }
+    
+    const results = await Promise.all(pagePromises);
+    const allFetched: EmailListItem[] = [];
+    let lastPageWithData = startPage - 1;
+    
+    for (let i = 0; i < results.length; i++) {
+      if (results[i].length > 0) {
+        allFetched.push(...results[i]);
+        lastPageWithData = startPage + i;
+      }
+    }
+    
+    // If any page returned less than full page size, we might be near the end
+    const hasMore = results[results.length - 1]?.length === EMAILS_PER_PAGE;
+    
+    return { emails: allFetched, lastPage: lastPageWithData, hasMore };
+  }, [fetchPage]);
+
+  /**
+   * Background fetch loop - continues fetching pages until no more data
+   */
+  const startBackgroundFetch = useCallback(async (startPage: number, isReadParam: boolean | undefined) => {
+    if (backgroundFetchRef.current) {
+      console.log('⚠️ Background fetch already running, skipping');
+      return; // Already running
+    }
+    
+    backgroundFetchRef.current = true;
+    setBackgroundLoading(true);
+    
+    let currentPage = startPage;
+    let consecutiveEmptyPages = 0;
+    
+    console.log(`🚀 Background fetch starting from page ${startPage}`);
+    
+    while (backgroundFetchRef.current && currentPage < MAX_PAGES) { // Fetch until no more data
+      try {
+        console.log(`📥 Background fetching pages ${currentPage} to ${currentPage + BACKGROUND_BATCH_SIZE - 1}`);
+        
+        const { emails, lastPage, hasMore } = await fetchPages(currentPage, BACKGROUND_BATCH_SIZE, isReadParam);
+        
+        console.log(`📨 Got ${emails.length} emails from pages ${currentPage}-${lastPage}, hasMore=${hasMore}`);
+        
+        if (emails.length === 0) {
+          consecutiveEmptyPages++;
+          if (consecutiveEmptyPages >= 2) {
+            console.log('⏹️ Two consecutive empty batches, stopping');
+            setHasMorePages(false);
+            break;
+          }
+          // Try next batch
+          currentPage = lastPage + 1;
+          continue;
+        }
+        
+        consecutiveEmptyPages = 0; // Reset counter
+        
+        // Transform and merge
+        const transformed = emails.map(transformEmailToCard);
+        setAllEmails(prev => {
+          const merged = mergeEmails(prev, transformed);
+          console.log(`📊 Total emails after merge: ${merged.length}`);
+          return merged;
+        });
+        
+        currentPage = lastPage + 1;
+        setNextPageToFetch(currentPage);
+        
+        if (!hasMore) {
+          console.log('⏹️ No more pages indicated by API');
+          setHasMorePages(false);
+          break;
+        }
+        
+        // Small delay to prevent overwhelming the API
+        await new Promise(resolve => setTimeout(resolve, BACKGROUND_FETCH_DELAY));
+        
+      } catch (err) {
+        console.error('Background fetch error:', err);
+        break;
+      }
+    }
+    
+    console.log(`✅ Background fetch complete, stopped at page ${currentPage}`);
+    backgroundFetchRef.current = false;
+    setBackgroundLoading(false);
+  }, [fetchPages, mergeEmails]);
+
+  /**
+   * Stop background fetching
+   */
+  const stopBackgroundFetch = useCallback(() => {
+    backgroundFetchRef.current = false;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  }, []);
+
+  /**
+   * Compute grouped emails using useMemo
+   * Always sorted by date (newest first) within each group
+   */
+  const { todayEmails, last7DaysEmails, last30DaysEmails, olderEmails, sortedAllEmails } = useMemo(() => {
     const now = new Date();
-    // Get midnight today in local timezone
     const todayStart = new Date(now);
     todayStart.setHours(0, 0, 0, 0);
-
-    // Calculate time boundaries
+    
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // Sort ALL emails by date first (newest first)
+    const sorted = [...allEmails].sort((a, b) => {
+      const dateA = a.dateReceived ? new Date(a.dateReceived).getTime() : 0;
+      const dateB = b.dateReceived ? new Date(b.dateReceived).getTime() : 0;
+      return dateB - dateA; // Newest first
+    });
+
+    // Debug: log first 3 emails with dates
+    if (sorted.length > 0) {
+      console.log('🔍 First 3 emails after sort:', sorted.slice(0, 3).map(e => ({
+        subject: e.title?.substring(0, 30),
+        dateReceived: e.dateReceived,
+        parsed: e.dateReceived ? new Date(e.dateReceived).toISOString() : 'none'
+      })));
+    }
 
     const today: any[] = [];
     const last7Days: any[] = [];
     const last30Days: any[] = [];
     const older: any[] = [];
 
-    console.log(`📅 Grouping ${emails.length} emails by time...`);
-    console.log(`📅 Now: ${now.toLocaleString()}`);
-    console.log(`📅 Today start: ${todayStart.toLocaleString()}`);
-    console.log(`📅 7 days ago: ${sevenDaysAgo.toLocaleString()}`);
-    console.log(`📅 30 days ago: ${thirtyDaysAgo.toLocaleString()}`);
-
-    emails.forEach((email) => {
+    sorted.forEach((email) => {
       const dateReceived = email.dateReceived ? new Date(email.dateReceived) : null;
-      if (!dateReceived) {
-        console.log(`⚠️ Email ${email.id} has no dateReceived, placing in Older`);
-        older.push(transformEmailToCard(email));
+      if (!dateReceived || isNaN(dateReceived.getTime())) {
+        older.push(email);
         return;
       }
 
-      // Log first few emails for debugging
-      if (today.length + last7Days.length + last30Days.length + older.length < 3) {
-        console.log(`📧 Email: ${email.subject?.substring(0, 30)}... | Date: ${dateReceived.toLocaleString()}`);
-      }
-
-      // Check if email is from today
       if (dateReceived >= todayStart) {
-        today.push(transformEmailToCard(email));
+        today.push(email);
       } else if (dateReceived >= sevenDaysAgo) {
-        last7Days.push(transformEmailToCard(email));
+        last7Days.push(email);
       } else if (dateReceived >= thirtyDaysAgo) {
-        last30Days.push(transformEmailToCard(email));
+        last30Days.push(email);
       } else {
-        older.push(transformEmailToCard(email));
+        older.push(email);
       }
     });
 
-    // Sort each section by date (newest first)
-    const sortByDate = (a: any, b: any) => {
-      const dateA = new Date(a.dateReceived || 0).getTime();
-      const dateB = new Date(b.dateReceived || 0).getTime();
-      return dateB - dateA; // Descending (newest first)
+    console.log(`📊 Grouped: Today=${today.length}, 7Days=${last7Days.length}, 30Days=${last30Days.length}, Older=${older.length}, Total=${sorted.length}`);
+    console.log(`📅 Date thresholds: todayStart=${todayStart.toISOString()}, 7daysAgo=${sevenDaysAgo.toISOString()}, 30daysAgo=${thirtyDaysAgo.toISOString()}`);
+
+    return { 
+      todayEmails: today, 
+      last7DaysEmails: last7Days, 
+      last30DaysEmails: last30Days, 
+      olderEmails: older,
+      sortedAllEmails: sorted
     };
+  }, [allEmails]);
 
-    today.sort(sortByDate);
-    last7Days.sort(sortByDate);
-    last30Days.sort(sortByDate);
-    older.sort(sortByDate);
+  /**
+   * Get visible emails based on visibleCount
+   * Prioritizes: Today -> Last 7 Days -> Last 30 Days -> Older
+   */
+  const visibleEmails = useMemo(() => {
+    let remaining = visibleCount;
+    
+    const visibleToday = todayEmails.slice(0, remaining);
+    remaining -= visibleToday.length;
+    
+    const visible7Days = remaining > 0 ? last7DaysEmails.slice(0, remaining) : [];
+    remaining -= visible7Days.length;
+    
+    const visible30Days = remaining > 0 ? last30DaysEmails.slice(0, remaining) : [];
+    remaining -= visible30Days.length;
+    
+    const visibleOlder = remaining > 0 ? olderEmails.slice(0, remaining) : [];
+    
+    return {
+      today: visibleToday,
+      last7Days: visible7Days,
+      last30Days: visible30Days,
+      older: visibleOlder
+    };
+  }, [todayEmails, last7DaysEmails, last30DaysEmails, olderEmails, visibleCount]);
 
-    console.log(`📊 Grouped: Today=${today.length}, Last 7 Days=${last7Days.length}, Last 30 Days=${last30Days.length}, Older=${older.length}`);
-
-    return { today, last7Days, last30Days, older };
-  };
-
-  // Fetch unread count independently
-  const fetchUnreadCount = async () => {
+  // Fetch unread count and total from API
+  const fetchUnreadCount = useCallback(async () => {
     try {
-      const snapshot = await withTimeout(
-        analyticsService.getInboxSnapshot(),
-        "Inbox snapshot"
-      );
+      const snapshot = await analyticsService.getInboxSnapshot();
       setRealUnreadCount(snapshot.unread);
+      setRealReadCount(snapshot.read); // Store real read count from API
+      // Set total emails from API (unread + read gives us total)
+      const total = (snapshot.unread || 0) + (snapshot.read || 0);
+      setTotalEmailsFromAPI(total);
+      console.log(`📊 API Total: unread=${snapshot.unread}, read=${snapshot.read}, total=${total}`);
     } catch (e) {
       console.warn("Failed to fetch unread count", e);
     }
-  };
+  }, []);
 
-  // Fetch emails from API
+  /**
+   * Initial data fetch + start background loading
+   */
   useEffect(() => {
-    fetchUnreadCount(); // update unread count on tab change/refresh
-
-    const fetchEmails = async () => {
+    const isReadParam = tab === "unread" ? false : tab === "read" ? true : undefined;
+    
+    // Check if tab actually changed (to avoid React Strict Mode double-run issues)
+    const tabActuallyChanged = currentTabRef.current !== tab;
+    currentTabRef.current = tab;
+    
+    // Only stop background fetch if tab actually changed
+    if (tabActuallyChanged) {
+      console.log(`🔄 Tab changed to: ${tab}, stopping existing background fetch`);
+      stopBackgroundFetch();
+    }
+    
+    // Reset state
+    setAllEmails([]);
+    setNextPageToFetch(1);
+    setHasMorePages(true);
+    setVisibleCount(INITIAL_VISIBLE_PER_SECTION * 4);
+    setError(null);
+    
+    const loadInitialData = async () => {
+      setInitialLoading(true);
+      
       try {
-        setLoading(true);
-        setError(null);
-
-        console.log(`🔄 Fetching inbox emails [Tab: ${tab}] - Page ${nextPageToFetch}...`);
-
-        // Define isRead filter based on tab
-        const isReadParam = tab === "unread" ? false : tab === "read" ? true : undefined;
-
-        // Fetch initial page (single page for faster first paint)
-        const pagePromises = [];
-        for (let i = 0; i < PAGES_TO_LOAD_INITIAL; i++) {
-          const pageNum = nextPageToFetch + i;
-          pagePromises.push(emailService.getInboxEmails("latest", isReadParam, pageNum));
-        }
-
-        const responses = await withTimeout(
-          Promise.all(pagePromises),
-          "Inbox emails"
+        // Fetch unread count
+        fetchUnreadCount();
+        
+        // Fetch first batch of pages for fast first paint
+        console.log(`🔄 Fetching initial ${INITIAL_PAGES_TO_FETCH} pages for tab: ${tab}`);
+        
+        const { emails, lastPage, hasMore } = await withTimeout(
+          fetchPages(1, INITIAL_PAGES_TO_FETCH, isReadParam),
+          "Initial inbox fetch"
         );
-        console.log('📦 Raw API responses:', responses);
-
-        // Combine all responses
-        let allEmails: EmailListItem[] = [];
-        let hasData = false;
-
-        // Check if response is array of emails or empty response object
-        for (const response of responses) {
-          if (!Array.isArray(response) || response.length === 0) continue;
-
-          const isEmailArray = (arr: any[]): arr is EmailListItem[] => {
-            return arr.length > 0 && 'id' in arr[0];
-          };
-
-          if (!isEmailArray(response)) {
-            // Empty inbox response
-            const emptyResp = response[0] as any;
-            console.log('📭 Empty inbox - Pending newsletters:', emptyResp.pendingNewsletters);
-            break;
-          } else {
-            allEmails = [...allEmails, ...response];
-            hasData = true;
-          }
-        }
-
-        if (!hasData || allEmails.length === 0) {
-          console.log('📭 No more emails available');
-          if (nextPageToFetch === 1) {
-            setTodayEmails([]);
-            setLast7DaysEmails([]);
-            setLast30DaysEmails([]);
-            setOlderEmails([]);
-          }
+        
+        if (emails.length === 0) {
+          setAllEmails([]);
           setHasMorePages(false);
         } else {
-          // Process emails
-          console.log(`📬 Received ${allEmails.length} emails total`);
-          const grouped = groupEmailsByTime(allEmails);
-
-          if (nextPageToFetch === 1) {
-            // First batch - replace all
-            setTodayEmails(grouped.today);
-            setLast7DaysEmails(grouped.last7Days);
-            setLast30DaysEmails(grouped.last30Days);
-            setOlderEmails(grouped.older);
+          const transformed = emails.map(transformEmailToCard);
+          setAllEmails(transformed);
+          setNextPageToFetch(lastPage + 1);
+          setHasMorePages(hasMore);
+          
+          console.log(`📊 Initial load: ${emails.length} emails, lastPage=${lastPage}, hasMore=${hasMore}`);
+          
+          // Start background fetch for remaining pages
+          if (hasMore) {
+            console.log(`🔄 Starting background fetch from page ${lastPage + 1}`);
+            // Use setTimeout to ensure state is settled before background fetch
+            setTimeout(() => {
+              startBackgroundFetch(lastPage + 1, isReadParam);
+            }, 100);
           } else {
-            // Subsequent batches - append
-            setTodayEmails(prev => [...prev, ...grouped.today]);
-            setLast7DaysEmails(prev => [...prev, ...grouped.last7Days]);
-            setLast30DaysEmails(prev => [...prev, ...grouped.last30Days]);
-            setOlderEmails(prev => [...prev, ...grouped.older]);
+            console.log('⚠️ hasMore is false, not starting background fetch');
           }
-
-          // Only stop pagination when we receive 0 emails
-          // Don't stop just because we got less than expected - there might be more!
-          setHasMorePages(allEmails.length > 0);
-
-          // Increment page counter for next batch
-          setNextPageToFetch(prev => prev + PAGES_TO_LOAD_INITIAL);
         }
       } catch (err: any) {
-        console.error('❌ Failed to fetch emails:', err);
-        const message = err?.message?.includes('timed out')
-          ? 'The server is slow right now (timeout). Please retry in a moment.'
-          : err.response?.data?.message || err.message || 'Failed to load emails.';
-        setError(message);
+        console.error('Failed to fetch initial emails:', err);
+        setError(err.message || 'Failed to load emails');
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        setInitialLoading(false);
       }
     };
+    
+    loadInitialData();
+    
+    // Cleanup function - only runs on unmount or actual tab change
+    return () => {
+      // The tab change detection above handles stopping for tab switches
+      // This cleanup is mainly for component unmount
+    };
+  }, [tab, fetchPages, fetchUnreadCount, startBackgroundFetch, stopBackgroundFetch]);
 
-    fetchEmails();
-  }, [tab]); // Fetch when tab changes (nextPageToFetch is managed internally)
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      console.log('🧹 Component unmounting, stopping background fetch');
+      stopBackgroundFetch();
+    };
+  }, [stopBackgroundFetch]);
 
-  // Refresh when user returns to tab (e.g. after reading)
+  // Handle window focus and visibility - refresh data when returning to page
   useEffect(() => {
     const handleFocus = () => {
-      console.log("🪟 Window focused - refreshing unread count...");
+      console.log('🔄 Window focused - refreshing counts');
       fetchUnreadCount();
-      // Optionally refresh first page to see if items moved
-      // If we are in "unread" tab, it's very useful to refresh.
-      if (tab === "unread") {
-        refreshInbox();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('🔄 Page visible again - refreshing data');
+        fetchUnreadCount();
+        // Also refresh the email list to get updated read status
+        const isReadParam = tab === "unread" ? false : tab === "read" ? true : undefined;
+        fetchPage(1, isReadParam).then(emails => {
+          if (emails.length > 0) {
+            const transformed = emails.map(transformEmailToCard);
+            setAllEmails(prev => {
+              // Merge with existing, but update read status from fresh data
+              const emailMap = new Map(transformed.map(e => [e.emailId, e]));
+              const updated = prev.map(e => emailMap.get(e.emailId) || e);
+              // Filter out emails that shouldn't be in current tab view
+              if (tab === "unread") {
+                return updated.filter(e => !e.read);
+              } else if (tab === "read") {
+                return updated.filter(e => e.read);
+              }
+              return updated;
+            });
+          }
+        });
       }
     };
 
-    // Listen for email status changes from reading page
     const handleEmailStatusChange = (event: Event) => {
       const customEvent = event as CustomEvent;
       const { emailId, isRead } = customEvent.detail;
+      console.log(`📧 Email status changed: ${emailId} -> read=${isRead}`);
       
-      console.log(`📧 Email ${emailId} status changed: isRead=${isRead}`);
-      
-      // Update all email lists to reflect the status change
-      const updateLists = (prev: any[]) =>
-        prev.map(e =>
-          e.emailId === emailId ? { ...e, read: isRead } : e
-        );
-      
-      setTodayEmails(updateLists);
-      setLast7DaysEmails(updateLists);
-      setLast30DaysEmails(updateLists);
-      setOlderEmails(updateLists);
-      
-      // Refresh unread count
+      setAllEmails(prev => {
+        const updated = prev.map(e => e.emailId === emailId ? { ...e, read: isRead } : e);
+        // If on unread tab and email is now read, filter it out
+        if (tab === "unread" && isRead) {
+          return updated.filter(e => e.emailId !== emailId);
+        }
+        // If on read tab and email is now unread, filter it out
+        if (tab === "read" && !isRead) {
+          return updated.filter(e => e.emailId !== emailId);
+        }
+        return updated;
+      });
       fetchUnreadCount();
     };
 
     window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('emailStatusChanged', handleEmailStatusChange);
     
     return () => {
       window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('emailStatusChanged', handleEmailStatusChange);
     };
-  }, [tab]);
+  }, [fetchUnreadCount, tab, fetchPage]);
 
-  // Visible counts for each section
-  const [visibleToday, setVisibleToday] = useState(INITIAL_VISIBLE);
-  const [visible7Days, setVisible7Days] = useState(INITIAL_VISIBLE);
-  const [visible30Days, setVisible30Days] = useState(INITIAL_VISIBLE);
-  const [visibleOlder, setVisibleOlder] = useState(INITIAL_VISIBLE);
-
-  // Trigger a new batch fetch (3 API pages -> 60 emails)
-  const loadNextBatch = async () => {
-    if (!hasMorePages || loadingMore) return;
-    setLoadingMore(true);
-
-    try {
-      const isReadParam = tab === "unread" ? false : tab === "read" ? true : undefined;
-
-      // Fetch next batch of pages
-      const pagePromises = [];
-      for (let i = 0; i < PAGES_TO_LOAD_MORE; i++) {
-        const pageNum = nextPageToFetch + i;
-        pagePromises.push(emailService.getInboxEmails("latest", isReadParam, pageNum));
-      }
-
-      const responses = await withTimeout(
-        Promise.all(pagePromises),
-        "Load more emails"
-      );
-
-      // Combine responses
-      let allEmails: EmailListItem[] = [];
-      for (const response of responses) {
-        if (!Array.isArray(response) || response.length === 0) continue;
-
-        // Check if it's an empty inbox response
-        const firstItem = response[0];
-        if ('pendingNewsletters' in firstItem) {
-          break;
-        }
-
-        // It's a valid email list, add to allEmails
-        allEmails = [...allEmails, ...(response as EmailListItem[])];
-      }
-
-      if (allEmails.length === 0) {
-        setHasMorePages(false);
-      } else {
-        const grouped = groupEmailsByTime(allEmails);
-        setTodayEmails(prev => [...prev, ...grouped.today]);
-        setLast7DaysEmails(prev => [...prev, ...grouped.last7Days]);
-        setLast30DaysEmails(prev => [...prev, ...grouped.last30Days]);
-        setOlderEmails(prev => [...prev, ...grouped.older]);
-
-        // Continue loading as long as we're getting emails
-        setHasMorePages(allEmails.length > 0);
-        setNextPageToFetch(prev => prev + PAGES_TO_LOAD_MORE);
-      }
-    } catch (err) {
-      console.error('Failed to load more emails:', err);
-    } finally {
-      setLoadingMore(false);
-    }
+  /* ---------------- UI HANDLERS ---------------- */
+  
+  const loadMoreVisible = () => {
+    setVisibleCount(prev => prev + LOAD_MORE_COUNT);
   };
 
-  /* ---------------- FILTERING LOGIC ---------------- */
-  // The API already filters for unread/read based on tab
-  // We don't need additional filtering here - just use the data as-is
-  const filteredToday = todayEmails;
-  const filtered7Days = last7DaysEmails;
-  const filtered30Days = last30DaysEmails;
-  const filteredOlder = olderEmails;
-
-  const unreadCountForSwitcher = realUnreadCount || [...todayEmails, ...last7DaysEmails, ...last30DaysEmails, ...olderEmails].filter(
-    (i) => !i.read
-  ).length;
-
-  const readCountForSwitcher = [...todayEmails, ...last7DaysEmails, ...last30DaysEmails, ...olderEmails].filter(
-    (i) => i.read
-  ).length;
-
-  const allCountForSwitcher = [...todayEmails, ...last7DaysEmails, ...last30DaysEmails, ...olderEmails].length;
-
-  /* ---------------- REFRESH FEATURE ---------------- */
-  const refreshInbox = async () => {
-    setNextPageToFetch(1);
-    setHasMorePages(true);
-    setVisibleToday(INITIAL_VISIBLE);
-    setVisible7Days(INITIAL_VISIBLE);
-    setVisible30Days(INITIAL_VISIBLE);
-    setVisibleOlder(INITIAL_VISIBLE);
-    setTodayEmails([]);
-    setLast7DaysEmails([]);
-    setLast30DaysEmails([]);
-    setOlderEmails([]);
-    // Trigger refetch by resetting state
+  const refreshInbox = () => {
     window.location.reload();
   };
 
-  /* ---------------- ACTION HANDLERS ---------------- */
   const onMoveToTrash = async (emailId: string) => {
     try {
       await emailService.moveToTrash(emailId);
-      // Remove from all local lists immediately (optimistic UI)
-      setTodayEmails(prev => prev.filter(e => e.emailId !== emailId));
-      setLast7DaysEmails(prev => prev.filter(e => e.emailId !== emailId));
-      setLast30DaysEmails(prev => prev.filter(e => e.emailId !== emailId));
-      setOlderEmails(prev => prev.filter(e => e.emailId !== emailId));
+      setAllEmails(prev => prev.filter(e => e.emailId !== emailId));
     } catch (err) {
       console.error("Failed to move to trash", err);
     }
@@ -458,70 +529,54 @@ export default function InboxPage() {
   const onToggleReadLater = async (emailId: string, isReadLater: boolean) => {
     try {
       await emailService.toggleReadLater(emailId, isReadLater);
-      // Update local state isReadLater status in all lists
-      const updateList = (prev: any[]) => prev.map(e =>
-        e.emailId === emailId ? { ...e, isReadLater: isReadLater } : e
-      );
-      setTodayEmails(updateList);
-      setLast7DaysEmails(updateList);
-      setLast30DaysEmails(updateList);
-      setOlderEmails(updateList);
+      setAllEmails(prev => prev.map(e =>
+        e.emailId === emailId ? { ...e, isReadLater } : e
+      ));
     } catch (err) {
       console.error("Failed to toggle read later", err);
     }
   };
 
-  /* ---------------- PAGINATION ---------------- */
-  // Single "View more" button at bottom
-  const totalEmails = todayEmails.length + last7DaysEmails.length + last30DaysEmails.length + olderEmails.length;
-  const totalVisible = visibleToday + visible7Days + visible30Days + visibleOlder;
-  
-  // Show more local data across all sections
-  const loadMoreEmails = async () => {
-    // First, try to show more local data in any section that has hidden emails
-    let expanded = false;
-    
-    if (visibleToday < filteredToday.length) {
-      setVisibleToday(prev => Math.min(prev + LOAD_MORE, filteredToday.length));
-      expanded = true;
-    } else if (visible7Days < filtered7Days.length) {
-      setVisible7Days(prev => Math.min(prev + LOAD_MORE, filtered7Days.length));
-      expanded = true;
-    } else if (visible30Days < filtered30Days.length) {
-      setVisible30Days(prev => Math.min(prev + LOAD_MORE, filtered30Days.length));
-      expanded = true;
-    } else if (visibleOlder < filteredOlder.length) {
-      setVisibleOlder(prev => Math.min(prev + LOAD_MORE, filteredOlder.length));
-      expanded = true;
-    }
-    
-    // If all local data is shown and API has more, fetch next batch
-    if (!expanded && hasMorePages && !loadingMore) {
-      await loadNextBatch();
+  const onToggleFavorite = async (emailId: string, isFavorite: boolean) => {
+    try {
+      await emailService.toggleFavorite(emailId, isFavorite);
+      setAllEmails(prev => prev.map(e =>
+        e.emailId === emailId ? { ...e, isFavorite } : e
+      ));
+    } catch (err) {
+      console.error("Failed to toggle favorite", err);
     }
   };
 
-  // Show global "View more" button if there's hidden local data OR more API pages
-  const hasHiddenEmails = visibleToday < filteredToday.length || 
-                          visible7Days < filtered7Days.length || 
-                          visible30Days < filtered30Days.length || 
-                          visibleOlder < filteredOlder.length;
-  const showGlobalViewMore = hasHiddenEmails || (hasMorePages && !loadingMore);
+  /* ---------------- COMPUTED VALUES ---------------- */
+  
+  const unreadCountForSwitcher = realUnreadCount || allEmails.filter(i => !i.read).length;
+  const readCountForSwitcher = realReadCount || allEmails.filter(i => i.read).length;
+  const allCountForSwitcher = totalEmailsFromAPI || allEmails.length;
 
-  const isTodayEmpty = filteredToday.length === 0;
-  const is7DaysEmpty = filtered7Days.length === 0;
-  const is30DaysEmpty = filtered30Days.length === 0;
-  const isOlderEmpty = filteredOlder.length === 0;
-
-  const allEmpty = isTodayEmpty && is7DaysEmpty && is30DaysEmpty && isOlderEmpty;
+  const totalEmailsCount = sortedAllEmails.length;
+  const visibleEmailsCount = visibleEmails.today.length + visibleEmails.last7Days.length + 
+                             visibleEmails.last30Days.length + visibleEmails.older.length;
+  
+  // Use API total for display, fallback to fetched count
+  const displayTotalCount = tab === "unread" 
+    ? (realUnreadCount || totalEmailsCount)
+    : tab === "read" 
+      ? (totalEmailsFromAPI - realUnreadCount || totalEmailsCount)
+      : (totalEmailsFromAPI || totalEmailsCount);
+  
+  const hasMoreToShow = visibleEmailsCount < totalEmailsCount || hasMorePages || visibleEmailsCount < displayTotalCount;
+  
+  const allEmpty = todayEmails.length === 0 && last7DaysEmails.length === 0 && 
+                   last30DaysEmails.length === 0 && olderEmails.length === 0;
 
   return (
     <>
       {/* Loading state */}
-      {loading && <InboxSkeleton />}
+      {initialLoading && <InboxSkeleton />}
 
       {/* Error state */}
-      {error && !loading && (
+      {error && !initialLoading && (
         <div className="w-full p-6 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-800">{error}</p>
           <button
@@ -533,26 +588,37 @@ export default function InboxPage() {
         </div>
       )}
 
-      {/* Content - only show if not loading */}
-      {!loading && !error && (
+      {/* Content */}
+      {!initialLoading && !error && (
         <>
-          {/* ---------------- MOBILE RENDER ---------------- */}
+          {/* Background loading indicator */}
+          {backgroundLoading && (
+            <div className="fixed top-4 right-4 z-50 bg-blue-500 text-white px-3 py-1 rounded-full text-sm flex items-center gap-2 shadow-lg">
+              <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+              Loading more...
+            </div>
+          )}
+
+          {/* MOBILE RENDER */}
           <MobileInboxSection
             tab={tab}
             setTab={setTab}
-            filteredToday={filteredToday}
-            filtered7Days={filtered7Days}
-            filtered30Days={filtered30Days}
-            filteredOlder={filteredOlder}
+            filteredToday={visibleEmails.today}
+            filtered7Days={visibleEmails.last7Days}
+            filtered30Days={visibleEmails.last30Days}
+            filteredOlder={visibleEmails.older}
             unreadCount={unreadCountForSwitcher}
             readCount={readCountForSwitcher}
             allCount={allCountForSwitcher}
-            hasMorePages={hasMorePages}
-            loadingMore={loadingMore}
-            onRequestMore={loadNextBatch}
+            hasMorePages={hasMoreToShow}
+            loadingMore={backgroundLoading}
+            onRequestMore={loadMoreVisible}
+            onMoveToTrash={onMoveToTrash}
+            onToggleReadLater={onToggleReadLater}
+            onToggleFavorite={onToggleFavorite}
           />
 
-          {/* ---------------- DESKTOP RENDER ---------------- */}
+          {/* DESKTOP RENDER */}
           <div className="hidden md:flex w-full flex-col gap-8">
             {/* HEADER */}
             <div className="w-full">
@@ -562,6 +628,12 @@ export default function InboxPage() {
                     {t("inbox.title")}
                   </h2>
                   <RefreshButton onClick={refreshInbox} />
+                  {backgroundLoading && (
+                    <span className="text-sm text-gray-500 flex items-center gap-1">
+                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-gray-400 border-t-transparent"></div>
+                      syncing...
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-4 px-4 shrink-0">
@@ -578,21 +650,22 @@ export default function InboxPage() {
 
             {/* CONTENT */}
             <div className="w-full flex flex-col gap-10 mt-6 px-6">
-              {/* ALL EMPTY */}
               {allEmpty && <EmptyInbox />}
 
               {/* TODAY */}
-              {!isTodayEmpty && (
+              {visibleEmails.today.length > 0 && (
                 <section>
                   <h3 className="text-[18px] font-semibold text-[#6F7680] mb-4">
-                    {t("time.today")}
+                    {t("time.today")} ({todayEmails.length})
                   </h3>
-                  {filteredToday.slice(0, visibleToday).map((item) => (
+                  {visibleEmails.today.map((item) => (
                     <div key={item.emailId} className="mb-2">
                       <NewsletterCard
                         {...item}
                         onMoveToTrash={onMoveToTrash}
                         onToggleReadLater={onToggleReadLater}
+                        onToggleFavorite={() => onToggleFavorite(item.emailId, !item.isFavorite)}
+                        isFavorite={item.isFavorite}
                       />
                     </div>
                   ))}
@@ -600,17 +673,19 @@ export default function InboxPage() {
               )}
 
               {/* LAST 7 DAYS */}
-              {!is7DaysEmpty && (
+              {visibleEmails.last7Days.length > 0 && (
                 <section>
                   <h3 className="text-[18px] font-semibold text-[#6F7680] mb-4">
-                    {t("time.last7Days", "Last 7 days")}
+                    {t("time.last7Days", "Last 7 days")} ({last7DaysEmails.length})
                   </h3>
-                  {filtered7Days.slice(0, visible7Days).map((item) => (
+                  {visibleEmails.last7Days.map((item) => (
                     <div key={item.emailId} className="mb-2">
                       <NewsletterCard
                         {...item}
                         onMoveToTrash={onMoveToTrash}
                         onToggleReadLater={onToggleReadLater}
+                        onToggleFavorite={() => onToggleFavorite(item.emailId, !item.isFavorite)}
+                        isFavorite={item.isFavorite}
                       />
                     </div>
                   ))}
@@ -618,17 +693,19 @@ export default function InboxPage() {
               )}
 
               {/* LAST 30 DAYS */}
-              {!is30DaysEmpty && (
+              {visibleEmails.last30Days.length > 0 && (
                 <section>
                   <h3 className="text-[18px] font-semibold text-[#6F7680] mb-4">
-                    {t("time.last30Days", "Last 30 days")}
+                    {t("time.last30Days", "Last 30 days")} ({last30DaysEmails.length})
                   </h3>
-                  {filtered30Days.slice(0, visible30Days).map((item) => (
+                  {visibleEmails.last30Days.map((item) => (
                     <div key={item.emailId} className="mb-2">
                       <NewsletterCard
                         {...item}
                         onMoveToTrash={onMoveToTrash}
                         onToggleReadLater={onToggleReadLater}
+                        onToggleFavorite={() => onToggleFavorite(item.emailId, !item.isFavorite)}
+                        isFavorite={item.isFavorite}
                       />
                     </div>
                   ))}
@@ -636,39 +713,34 @@ export default function InboxPage() {
               )}
 
               {/* OLDER */}
-              {!isOlderEmpty && (
+              {visibleEmails.older.length > 0 && (
                 <section>
                   <h3 className="text-[18px] font-semibold text-[#6F7680] mb-4">
-                    {t("time.older", "Older")}
+                    {t("time.older", "Older")} ({olderEmails.length})
                   </h3>
-                  {filteredOlder.slice(0, visibleOlder).map((item) => (
+                  {visibleEmails.older.map((item) => (
                     <div key={item.emailId} className="mb-2">
                       <NewsletterCard
                         {...item}
                         onMoveToTrash={onMoveToTrash}
                         onToggleReadLater={onToggleReadLater}
+                        onToggleFavorite={() => onToggleFavorite(item.emailId, !item.isFavorite)}
+                        isFavorite={item.isFavorite}
                       />
                     </div>
                   ))}
                 </section>
               )}
 
-              {/* GLOBAL VIEW MORE BUTTON */}
-              {showGlobalViewMore && (
+              {/* VIEW MORE BUTTON */}
+              {hasMoreToShow && (
                 <div className="w-full flex justify-center mt-8 pb-12">
                   <button
-                    onClick={loadMoreEmails}
-                    disabled={loadingMore}
-                    className="px-8 py-3 border border-gray-300 rounded-full text-black font-medium hover:bg-gray-50 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={loadMoreVisible}
+                    className="px-8 py-3 border border-gray-300 rounded-full text-black font-medium hover:bg-gray-50 transition shadow-sm"
                   >
-                    {loadingMore ? t("common.loading") : t("common.viewMore")}
+                    {t("common.viewMore")} ({visibleEmailsCount} of {displayTotalCount.toLocaleString()}{backgroundLoading ? '+' : ''})
                   </button>
-                </div>
-              )}
-
-              {loadingMore && (
-                <div className="flex justify-center mt-6 pb-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
               )}
             </div>

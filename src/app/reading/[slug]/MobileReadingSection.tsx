@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import MobileFloatingNavbar from "@/components/reading/MobileFloatingNavbar";
 import MobileReadingMenu from "@/components/reading/MobileReadingMenu";
 import MobileReadingHeader from "@/components/reading/MobileReadingHeader";
 import ReadModeSettings from "@/components/reading/ReadModeSettings";
+import emailService from "@/services/email";
 
 type ThemeMode = "light" | "dark" | "system";
 type PageColor = "white" | "paper" | "calm";
@@ -66,6 +67,43 @@ export default function MobileReadingSection({
   const [isFavorite, setIsFavorite] = useState(initialFavorite);
   const [isRead, setIsRead] = useState(initialRead);
 
+  // Ref to track if we've already triggered auto-mark-as-read to avoid duplicate calls
+  const hasAutoMarkedAsReadRef = useRef(false);
+
+  // Update ref when initial read status is already true
+  useEffect(() => {
+    if (isRead) {
+      hasAutoMarkedAsReadRef.current = true;
+    }
+  }, [isRead]);
+
+  // Handler for auto-marking as read when scrolling to bottom
+  const handleAutoMarkAsRead = useCallback(async () => {
+    if (hasAutoMarkedAsReadRef.current) return;
+    hasAutoMarkedAsReadRef.current = true;
+    
+    console.log('📖 Mobile: User reached bottom of article - marking as read');
+    
+    try {
+      await emailService.toggleReadStatus(id, true);
+      setIsRead(true);
+      
+      // Broadcast event so inbox updates
+      if (typeof window !== 'undefined') {
+        const event = new CustomEvent('emailStatusChanged', {
+          detail: {
+            emailId: id,
+            isRead: true,
+            timestamp: new Date().toISOString()
+          }
+        });
+        window.dispatchEvent(event);
+      }
+    } catch (err) {
+      console.error("Failed to auto-mark as read", err);
+    }
+  }, [id]);
+
   /* ---------------- SCROLL HANDLER ---------------- */
   useEffect(() => {
     const el = contentRef.current;
@@ -73,12 +111,18 @@ export default function MobileReadingSection({
 
     const handleScroll = () => {
       setAtTop(el.scrollTop < 8);
+      
+      // Check if scrolled to bottom
+      const atBottomVal = el.scrollTop + el.clientHeight >= el.scrollHeight - 5;
+      if (atBottomVal && !hasAutoMarkedAsReadRef.current) {
+        handleAutoMarkAsRead();
+      }
     };
 
     handleScroll();
     el.addEventListener("scroll", handleScroll);
     return () => el.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [handleAutoMarkAsRead]);
 
   // Background classes based on theme and page color
   const getBackgroundClass = () => {

@@ -5,12 +5,25 @@ import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function EmailBubble() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [copied, setCopied] = useState(false);
 
-  // Simple: Just construct email from username
-  const username = user?.username || "arup.dev"; // Fallback for safety
-  const email = `${username}@inbo.me`;
+  // Use inboxEmail from API, fallback to constructing from username
+  const email = user?.inboxEmail || (user?.username ? `${user.username}@inbo.me` : "");
+
+  // Show loading placeholder while fetching user
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 animate-pulse">
+        <div className="w-[22px] h-[22px] bg-gray-200 rounded-full" />
+        <div className="w-32 h-4 bg-gray-200 rounded" />
+        <div className="w-14 h-6 bg-gray-200 rounded-full" />
+      </div>
+    );
+  }
+
+  // Don't show if no email available after loading
+  if (!email) return null;
 
   const handleCopy = async () => {
     try {

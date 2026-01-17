@@ -101,6 +101,45 @@ export default function ReadLaterPage() {
     return filteredItems;
   }, [filteredItems, sortBy]);
 
+  /* -------- ACTION HANDLERS -------- */
+  const onMoveToTrash = async (emailId: string) => {
+    try {
+      await emailService.moveToTrash(emailId);
+      // Remove from local list immediately
+      setItems(prev => prev.filter(e => e.emailId !== emailId));
+    } catch (err) {
+      console.error("Failed to move to trash", err);
+    }
+  };
+
+  const onToggleReadLater = async (emailId: string, isReadLater: boolean) => {
+    try {
+      await emailService.toggleReadLater(emailId, isReadLater);
+      // If removing from read later, remove from list; otherwise update
+      if (!isReadLater) {
+        setItems(prev => prev.filter(e => e.emailId !== emailId));
+      } else {
+        setItems(prev => prev.map(e =>
+          e.emailId === emailId ? { ...e, isReadLater } : e
+        ));
+      }
+    } catch (err) {
+      console.error("Failed to toggle read later", err);
+    }
+  };
+
+  const onToggleFavorite = async (emailId: string, isFavorite: boolean) => {
+    try {
+      await emailService.toggleFavorite(emailId, isFavorite);
+      // Update local state
+      setItems(prev => prev.map(e =>
+        e.emailId === emailId ? { ...e, isFavorite } : e
+      ));
+    } catch (err) {
+      console.error("Failed to toggle favorite", err);
+    }
+  };
+
   const isEmpty = sortedItems.length === 0;
   const showMore = visible < sortedItems.length;
 
@@ -169,6 +208,11 @@ export default function ReadLaterPage() {
                     key={item.slug}
                     {...item}
                     onClick={() => { }}
+                    isReadLater={true}
+                    onMoveToTrash={onMoveToTrash}
+                    onToggleReadLater={onToggleReadLater}
+                    onToggleFavorite={(emailId: string, isFavorite: boolean) => onToggleFavorite(emailId, isFavorite)}
+                    isFavorite={item.isFavorite}
                   />
                 ))}
               </div>
@@ -249,7 +293,15 @@ export default function ReadLaterPage() {
           <div className="w-full flex flex-col mt-2">
             {sortedItems.slice(0, visible).map((item) => (
               <div key={item.slug} className="mb-3">
-                <NewsletterCard {...item} onClick={() => { }} />
+                <NewsletterCard
+                  {...item}
+                  onClick={() => { }}
+                  isReadLater={true}
+                  onMoveToTrash={onMoveToTrash}
+                  onToggleReadLater={onToggleReadLater}
+                  onToggleFavorite={(emailId: string, isFavorite: boolean) => onToggleFavorite(emailId, isFavorite)}
+                  isFavorite={item.isFavorite}
+                />
               </div>
             ))}
 

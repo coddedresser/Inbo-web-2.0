@@ -453,9 +453,9 @@ class EmailService {
 
   async markEmailAsRead(emailId: string): Promise<void> {
     try {
-      // Mark as read
+      // Mark as read - API expects camelCase "isRead"
       await apiClient.patch(EMAIL_ENDPOINTS.MARK_READ.replace('{id}', emailId), {
-        is_read: true
+        isRead: true
       });
       // Invalidate inbox cache so next refresh shows updated read status
       cacheManager.invalidatePrefix(CACHE_KEYS.INBOX);
@@ -471,9 +471,12 @@ class EmailService {
    */
   async toggleReadStatus(emailId: string, isRead: boolean): Promise<void> {
     try {
+      // API expects camelCase "isRead"
       await apiClient.patch(EMAIL_ENDPOINTS.MARK_READ.replace('{id}', emailId), {
-        is_read: isRead
+        isRead: isRead
       });
+      // Invalidate inbox cache so next refresh shows updated read status
+      cacheManager.invalidatePrefix(CACHE_KEYS.INBOX);
     } catch (error: any) {
       // Backend known issue: often returns 500 even if successful
       console.warn('Backend reported error toggling read status (ignoring):', error.message);

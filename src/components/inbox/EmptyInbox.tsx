@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import SubscribeButton from "../SubscribeButton";
 import { useTranslation } from "react-i18next";
 
 export default function EmptyInbox() {
@@ -124,7 +123,29 @@ function SuggestedNewsletterCard() {
         Curated stories on UX, visual design, and research
       </p>
 
-      <SubscribeButton />
+      <Link
+        href="/discover"
+        className="
+          cursor-pointer
+          inline-flex items-center justify-center gap-2
+          rounded-full
+          font-medium
+          whitespace-nowrap
+          transition-all duration-300
+          h-10 px-5 text-base
+          bg-[#0C1014] text-white hover:bg-[#F2F3F5] hover:text-[#0C1014]
+        "
+      >
+        <span>Discover</span>
+        <Image
+          src="/icons/subscribe-icon-light.png"
+          alt=""
+          width={16}
+          height={16}
+          draggable={false}
+          className="w-5 h-5"
+        />
+      </Link>
     </div>
   );
 }

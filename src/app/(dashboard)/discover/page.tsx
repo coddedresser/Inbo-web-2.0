@@ -18,6 +18,7 @@ const transformToCarouselItem = (newsletter: Newsletter, tagLabel?: string, tagI
   ctaLabel: "Subscribe",
   tagLabel,
   tagIcon,
+  websiteUrl: newsletter.url, // Newsletter's website for subscription
 });
 
 export default function DiscoverPage() {

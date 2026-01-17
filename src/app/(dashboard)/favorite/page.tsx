@@ -85,6 +85,45 @@ export default function FavouritePage() {
     return !item.read;
   });
 
+  /* -------- ACTION HANDLERS -------- */
+  const onMoveToTrash = async (emailId: string) => {
+    try {
+      await emailService.moveToTrash(emailId);
+      // Remove from local list immediately
+      setItems(prev => prev.filter(e => e.emailId !== emailId));
+    } catch (err) {
+      console.error("Failed to move to trash", err);
+    }
+  };
+
+  const onToggleReadLater = async (emailId: string, isReadLater: boolean) => {
+    try {
+      await emailService.toggleReadLater(emailId, isReadLater);
+      // Update local state
+      setItems(prev => prev.map(e =>
+        e.emailId === emailId ? { ...e, isReadLater } : e
+      ));
+    } catch (err) {
+      console.error("Failed to toggle read later", err);
+    }
+  };
+
+  const onToggleFavorite = async (emailId: string, isFavorite: boolean) => {
+    try {
+      await emailService.toggleFavorite(emailId, isFavorite);
+      // If removing from favorites, remove from list; otherwise update
+      if (!isFavorite) {
+        setItems(prev => prev.filter(e => e.emailId !== emailId));
+      } else {
+        setItems(prev => prev.map(e =>
+          e.emailId === emailId ? { ...e, isFavorite } : e
+        ));
+      }
+    } catch (err) {
+      console.error("Failed to toggle favorite", err);
+    }
+  };
+
   /* -------- MOBILE -------- */
   if (isMobile) {
     return <MobileFavoriteSection />;
@@ -122,7 +161,12 @@ export default function FavouritePage() {
           <div className="w-full flex flex-col mt-2">
             {filteredItems.slice(0, visible).map((item) => (
               <div key={item.slug} className="mb-3">
-                <NewsletterCard {...item} onClick={() => { }} />
+                <NewsletterCard
+                  {...item}
+                  onMoveToTrash={onMoveToTrash}
+                  onToggleReadLater={onToggleReadLater}
+                  onToggleFavorite={onToggleFavorite}
+                />
               </div>
             ))}
 

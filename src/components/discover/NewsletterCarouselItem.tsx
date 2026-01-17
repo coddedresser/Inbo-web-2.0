@@ -11,6 +11,7 @@ export interface NewsletterEntry {
   ctaLabel: string;
   tagLabel?: string;
   tagIcon?: string;
+  websiteUrl?: string; // Newsletter's website URL for subscription
 }
 
 export default function NewsletterCarouselItem({
@@ -22,6 +23,7 @@ export default function NewsletterCarouselItem({
   ctaLabel,
   tagLabel,
   tagIcon,
+  websiteUrl,
 }: NewsletterEntry) {
   return (
     <div className="w-full max-w-[280px] flex-none p-4 bg-white rounded-[20px] shadow-sm flex flex-col gap-3 relative z-10">
@@ -71,7 +73,7 @@ export default function NewsletterCarouselItem({
         <div className="flex justify-between items-center">
 
           {/* CTA BUTTON */}
-          <SubscribeButton newsletterId={id} />
+          <SubscribeButton newsletterId={id} websiteUrl={websiteUrl} />
 
           {/* FREQUENCY */}
           <div className="px-1.5 py-1 rounded-b-[12px] flex items-center gap-2">

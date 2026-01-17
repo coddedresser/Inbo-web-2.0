@@ -113,6 +113,19 @@ export default function MobileReadingMenu({
     try {
       await emailService.toggleReadStatus(emailId, nextStatus);
       onReadChange?.(nextStatus);
+      
+      // Broadcast event so inbox updates
+      if (typeof window !== 'undefined') {
+        const event = new CustomEvent('emailStatusChanged', {
+          detail: {
+            emailId: emailId,
+            isRead: nextStatus,
+            timestamp: new Date().toISOString()
+          }
+        });
+        window.dispatchEvent(event);
+      }
+      
       onClose();
     } catch (err) {
       console.error("Failed to toggle read status", err);

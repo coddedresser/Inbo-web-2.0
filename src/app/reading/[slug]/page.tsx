@@ -411,9 +411,27 @@ export default function ReadingPage(props: PageProps) {
 
         // Mark as read when opening (non-blocking)
         if (!email.isRead) {
-          emailService.markEmailAsRead(slug).catch(err => {
-            console.warn('Failed to mark email as read:', err);
-          });
+          console.log('📧 Marking email as read on open:', slug);
+          emailService.markEmailAsRead(slug)
+            .then(() => {
+              // Update local state to reflect read status
+              setEmailData(prev => prev ? { ...prev, isRead: true } : null);
+              
+              // Dispatch event so inbox knows about the change
+              if (typeof window !== 'undefined') {
+                const event = new CustomEvent('emailStatusChanged', {
+                  detail: {
+                    emailId: slug,
+                    isRead: true,
+                    timestamp: new Date().toISOString()
+                  }
+                });
+                window.dispatchEvent(event);
+              }
+            })
+            .catch(err => {
+              console.warn('Failed to mark email as read:', err);
+            });
         }
       } catch (err: any) {
         console.error('Failed to fetch email:', err);
@@ -435,7 +453,7 @@ export default function ReadingPage(props: PageProps) {
     }
   }, [slug]);
 
-  const handleToggleRead = async (forcedStatus?: boolean) => {
+  const handleToggleRead = useCallback(async (forcedStatus?: boolean) => {
     if (!emailData) return;
     const nextStatus = forcedStatus !== undefined ? forcedStatus : !emailData.isRead;
 
@@ -462,7 +480,7 @@ export default function ReadingPage(props: PageProps) {
     } catch (e) {
       console.error("Failed to toggle read status", e);
     }
-  };
+  }, [emailData]);
 
   const handleMoveToTrash = async () => {
     if (!emailData) return;
@@ -601,6 +619,16 @@ export default function ReadingPage(props: PageProps) {
   // Original HTML content for default view
   const htmlContent = emailData?.body || emailData?.contentPreview || "<p>No content available</p>";
 
+  // Ref to track if we've already triggered auto-mark-as-read to avoid duplicate calls
+  const hasAutoMarkedAsReadRef = useRef(false);
+
+  // Update ref when emailData changes
+  useEffect(() => {
+    if (emailData?.isRead) {
+      hasAutoMarkedAsReadRef.current = true;
+    }
+  }, [emailData?.isRead]);
+
   /* ---------------- SCROLL STATE ---------------- */
   useEffect(() => {
     const el = contentRef.current;
@@ -613,8 +641,10 @@ export default function ReadingPage(props: PageProps) {
       setAtTop(atTopVal);
       setAtBottom(atBottomVal);
 
-      // Task 4: Auto-mark as read when bottom reached
-      if (atBottomVal && !emailData?.isRead) {
+      // Auto-mark as read when user scrolls to bottom (only once)
+      if (atBottomVal && !hasAutoMarkedAsReadRef.current) {
+        hasAutoMarkedAsReadRef.current = true;
+        console.log('📖 User reached bottom of article - marking as read');
         handleToggleRead(true);
       }
 
@@ -625,7 +655,7 @@ export default function ReadingPage(props: PageProps) {
     handleScroll();
     el.addEventListener("scroll", handleScroll);
     return () => el.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [handleToggleRead]);
 
   /* ---------------- HIGHLIGHTING LOGIC ---------------- */
   useEffect(() => {

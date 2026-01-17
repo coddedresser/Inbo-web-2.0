@@ -28,6 +28,9 @@ export default function MobileInboxSection({
   hasMorePages,
   loadingMore,
   onRequestMore,
+  onMoveToTrash,
+  onToggleReadLater,
+  onToggleFavorite,
 }: {
   tab: string;
   setTab: (t: any) => void;
@@ -41,6 +44,9 @@ export default function MobileInboxSection({
   hasMorePages: boolean;
   loadingMore: boolean;
   onRequestMore?: () => void;
+  onMoveToTrash?: (emailId: string) => void;
+  onToggleReadLater?: (emailId: string, isReadLater: boolean) => void;
+  onToggleFavorite?: (emailId: string, isFavorite: boolean) => void;
 }) {
   const [visibleToday, setVisibleToday] = useState(INITIAL_VISIBLE_MOBILE);
   const [visible7Days, setVisible7Days] = useState(INITIAL_VISIBLE_MOBILE);
@@ -98,7 +104,14 @@ export default function MobileInboxSection({
           <section className="mb-4">
             <h3 className="text-[14px] font-bold text-gray-400 px-5 mb-3 uppercase tracking-wider">{t("time.today")}</h3>
             {filteredToday.slice(0, visibleToday).map((item, i) => (
-              <NewsletterCard key={item.slug || i} {...item} />
+              <NewsletterCard
+                key={item.slug || i}
+                {...item}
+                onMoveToTrash={onMoveToTrash}
+                onToggleReadLater={onToggleReadLater}
+                onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(item.emailId || item.slug, !item.isFavorite) : undefined}
+                isFavorite={item.isFavorite}
+              />
             ))}
             {(visibleToday < filteredToday.length || (hasMorePages && !loadingMore)) && (
               <button
@@ -116,7 +129,14 @@ export default function MobileInboxSection({
           <section className="mb-4">
             <h3 className="text-[14px] font-bold text-gray-400 px-5 mb-3 uppercase tracking-wider">{t("time.last7Days")}</h3>
             {filtered7Days.slice(0, visible7Days).map((item, i) => (
-              <NewsletterCard key={item.slug || i} {...item} />
+              <NewsletterCard
+                key={item.slug || i}
+                {...item}
+                onMoveToTrash={onMoveToTrash}
+                onToggleReadLater={onToggleReadLater}
+                onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(item.emailId || item.slug, !item.isFavorite) : undefined}
+                isFavorite={item.isFavorite}
+              />
             ))}
             {(visible7Days < filtered7Days.length || (hasMorePages && !loadingMore)) && (
               <button
@@ -134,7 +154,14 @@ export default function MobileInboxSection({
           <section className="mb-4">
             <h3 className="text-[14px] font-bold text-gray-400 px-5 mb-3 uppercase tracking-wider">{t("time.last30Days")}</h3>
             {filtered30Days.slice(0, visible30Days).map((item, i) => (
-              <NewsletterCard key={item.slug || i} {...item} />
+              <NewsletterCard
+                key={item.slug || i}
+                {...item}
+                onMoveToTrash={onMoveToTrash}
+                onToggleReadLater={onToggleReadLater}
+                onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(item.emailId || item.slug, !item.isFavorite) : undefined}
+                isFavorite={item.isFavorite}
+              />
             ))}
             {(visible30Days < filtered30Days.length || (hasMorePages && !loadingMore)) && (
               <button
@@ -152,7 +179,14 @@ export default function MobileInboxSection({
           <section className="mb-4">
             <h3 className="text-[14px] font-bold text-gray-400 px-5 mb-3 uppercase tracking-wider">{t("time.older")}</h3>
             {filteredOlder.slice(0, visibleOlder).map((item, i) => (
-              <NewsletterCard key={item.slug || i} {...item} />
+              <NewsletterCard
+                key={item.slug || i}
+                {...item}
+                onMoveToTrash={onMoveToTrash}
+                onToggleReadLater={onToggleReadLater}
+                onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(item.emailId || item.slug, !item.isFavorite) : undefined}
+                isFavorite={item.isFavorite}
+              />
             ))}
             {(visibleOlder < filteredOlder.length || (hasMorePages && !loadingMore)) && (
               <button

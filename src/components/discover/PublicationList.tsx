@@ -12,6 +12,7 @@ interface PublicationData {
   desc: string;
   id?: string;
   frequency?: string;
+  url?: string; // Newsletter website URL
 }
 
 export default function PublicationList({ title }: { title: string }) {
@@ -37,6 +38,7 @@ export default function PublicationList({ title }: { title: string }) {
           desc: n.description || "Discover curated content delivered to your inbox.",
           id: n.id,
           frequency: n.contentFrequency || "Weekly",
+          url: n.url, // Include website URL
         }));
         setList(transformed);
       } catch (error) {
@@ -64,6 +66,7 @@ export default function PublicationList({ title }: { title: string }) {
           frequency: details.contentFrequency || "Weekly",
           categories: details.categories,
           author: details.author,
+          url: details.url || pub.url, // Include website URL
         });
       } catch {
         setSelectedPublication(pub);

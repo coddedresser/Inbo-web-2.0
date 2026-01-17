@@ -15,6 +15,7 @@ export interface Publication {
   desc: string;
   description: string;
   frequency: string;
+  url?: string; // Newsletter website URL
 }
 
 export default function PublicationModal({
@@ -112,7 +113,7 @@ export default function PublicationModal({
 
           {/* SUBSCRIBE + BOOKMARK */}
           <div className="flex items-center justify-between gap-3 w-full mb-6">
-            <SubscribeButton newsletterId={publication.id} />
+            <SubscribeButton newsletterId={publication.id} websiteUrl={publication.url} />
 
             <button
               onClick={handlecollectionClick}
