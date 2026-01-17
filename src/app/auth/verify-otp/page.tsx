@@ -37,6 +37,9 @@ function VerifyOTPContent() {
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendCountdown, setResendCountdown] = useState(0);
+  
+  // Ref to track if verification is in progress (prevents race conditions)
+  const isVerifyingRef = useRef(false);
 
   const inputRefs = [
     useRef<HTMLInputElement>(null),
@@ -83,10 +86,21 @@ function VerifyOTPContent() {
 
   useEffect(() => {
     const otpString = otp.join("");
-    if (otpString.length === 4 && !isLoading) {
-      handleVerifyOTP();
+    
+    // Only auto-verify if:
+    // 1. OTP is complete (4 digits)
+    // 2. Not already loading/verifying
+    // 3. Email is present
+    if (otpString.length === 4 && !isLoading && !isVerifyingRef.current && email) {
+      // Small delay to ensure state is stable and prevent race conditions
+      const timer = setTimeout(() => {
+        if (!isVerifyingRef.current) {
+          handleVerifyOTP();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [otp]);
+  }, [otp, isLoading, email]);
 
   /* ================= HANDLE OTP INPUT CHANGE ================= */
 
@@ -142,10 +156,24 @@ function VerifyOTPContent() {
       return;
     }
 
+    // Prevent multiple simultaneous verification attempts
+    if (isVerifyingRef.current || isLoading) {
+      console.log("⏳ Verification already in progress, skipping...");
+      return;
+    }
+
+    // Check email is present
+    if (!email) {
+      setError("Email is missing. Please go back and enter your email.");
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
+    isVerifyingRef.current = true;
 
     try {
+      console.log("🔐 Verifying OTP for:", email, "OTP:", otpString);
       const response = await verifyOTP(email, otpString);
       
       // Check if user is new or needs onboarding
@@ -155,6 +183,7 @@ function VerifyOTPContent() {
         router.push("/inbox");
       }
     } catch (err: any) {
+      console.error("❌ OTP verification failed:", err);
       const errorMessage =
         err?.response?.data?.message ||
         err?.message ||
@@ -165,6 +194,7 @@ function VerifyOTPContent() {
       inputRefs[0]?.current?.focus();
     } finally {
       setIsLoading(false);
+      isVerifyingRef.current = false;
     }
   };
 
